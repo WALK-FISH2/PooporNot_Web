@@ -1,0 +1,116 @@
+<view class="page {{darkMode ? 'dark' : ''}}">
+  <view class="map-wrap">
+    <map
+      id="mainMap"
+      class="map"
+      latitude="{{latitude}}"
+      longitude="{{longitude}}"
+      scale="{{scale}}"
+      show-location
+      markers="{{markers}}"
+      polyline="{{polyline}}"
+      bindmarkertap="onMarkerTap"
+    />
+
+    <cover-view class="brand">
+      <cover-view>
+        <cover-view class="eyebrow">拉了么</cover-view>
+        <cover-view class="title">附近厕所</cover-view>
+      </cover-view>
+      <cover-view class="status">{{statusText}}</cover-view>
+    </cover-view>
+
+    <cover-view class="tools">
+      <cover-view class="tool" bindtap="onLocateTap">◎</cover-view>
+      <cover-view class="tool" bindtap="onSearchTap">搜</cover-view>
+      <cover-view class="tool" bindtap="onShowMetroTap">铁</cover-view>
+      <cover-view class="tool" bindtap="onThemeTap">{{darkMode ? '日' : '夜'}}</cover-view>
+    </cover-view>
+  </view>
+
+  <view class="panel">
+    <view class="search-box">
+      <view class="city-row">
+        <input class="input city-input" value="{{cityKeyword}}" placeholder="城市" bindinput="onCityInput" confirm-type="done" />
+        <button class="small-button secondary" bindtap="onCityTap">城市</button>
+      </view>
+      <view class="place-row">
+        <input class="input place-input" value="{{placeKeyword}}" placeholder="小区、商场、地铁站或地址" bindinput="onPlaceInput" confirm-type="search" bindconfirm="onPlaceSearchTap" />
+        <button class="small-button secondary" bindtap="onPlaceSearchTap">地点</button>
+      </view>
+      <view class="action-row">
+        <picker mode="selector" range="{{radiusOptions}}" bindchange="onRadiusChange">
+          <view class="filter">半径 {{radiusText}}</view>
+        </picker>
+        <button class="primary search-action" bindtap="onSearchTap">查厕所</button>
+      </view>
+    </view>
+
+    <view class="panel-head">
+      <view>
+        <text class="eyebrow">结果</text>
+        <view class="panel-title">{{resultTitle}}</view>
+      </view>
+      <view class="count">{{resultCount}}</view>
+    </view>
+
+    <view class="filters">
+      <button class="filter" bindtap="onShowToiletsTap">厕所</button>
+      <button class="filter" bindtap="onShowMetroTap">地铁</button>
+    </view>
+
+    <scroll-view class="list" scroll-y>
+      <block wx:if="{{panelMode === 'places'}}">
+        <view wx:for="{{places}}" wx:key="id" class="card" data-index="{{index}}" bindtap="onPlaceTap">
+          <view class="card-main">
+            <text class="card-title">{{item.name}}</text>
+            <text class="card-sub">{{item.address || '暂无地址'}}</text>
+            <text class="card-meta">{{item.metaText}}</text>
+          </view>
+          <view class="route-chip" data-index="{{index}}" catchtap="onPlaceUseTap">选定</view>
+        </view>
+      </block>
+
+      <block wx:elif="{{panelMode === 'toilets'}}">
+        <view wx:for="{{toilets}}" wx:key="id" class="card" data-index="{{index}}" bindtap="onToiletTap">
+          <view class="card-main">
+            <text class="card-title">{{item.name}}</text>
+            <text class="card-sub">{{item.address || '暂无地址'}}</text>
+            <text class="card-meta">{{item.distanceText}}</text>
+          </view>
+          <view class="route-chip" data-index="{{index}}" catchtap="onToiletRouteTap">路线</view>
+        </view>
+      </block>
+
+      <block wx:elif="{{panelMode === 'metro'}}">
+        <view wx:for="{{metroStations}}" wx:key="name" class="card" data-index="{{index}}" bindtap="onMetroTap">
+          <view class="card-main">
+            <text class="card-title">{{item.name}}</text>
+            <text class="card-sub">{{item.lineName}}</text>
+            <text class="card-meta">{{item.toiletText}}</text>
+          </view>
+          <view class="metro-dot"></view>
+        </view>
+      </block>
+
+      <block wx:elif="{{panelMode === 'detail'}}">
+        <view class="detail-card">
+          <text class="card-title">{{detail.title}}</text>
+          <text class="card-sub">{{detail.subtitle}}</text>
+          <text class="card-meta">{{detail.toiletText || detail.meta}}</text>
+          <button class="primary" bindtap="onRouteTap">{{detail.type === 'place' ? '查找周围厕所' : '路线'}}</button>
+        </view>
+      </block>
+
+      <block wx:elif="{{panelMode === 'route'}}">
+        <view class="detail-card">
+          <text class="card-title">{{resultTitle}}</text>
+          <text class="card-sub">{{routeSummary}}</text>
+          <button class="primary secondary" bindtap="onBackTap">返回结果</button>
+        </view>
+      </block>
+
+      <view wx:else class="empty">暂无结果</view>
+    </scroll-view>
+  </view>
+</view>

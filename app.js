@@ -2,7 +2,10 @@ const els = {
   map: document.querySelector("#map"),
   status: document.querySelector("#statusPill"),
   drawerEyebrow: document.querySelector("#drawerEyebrow"),
-  keyword: document.querySelector("#keywordInput"),
+  city: document.querySelector("#cityInput"),
+  place: document.querySelector("#placeInput"),
+  cityButton: document.querySelector("#cityButton"),
+  placeButton: document.querySelector("#placeButton"),
   radius: document.querySelector("#radiusSelect"),
   search: document.querySelector("#searchButton"),
   locate: document.querySelector("#locateButton"),
@@ -26,12 +29,19 @@ let AMapRef;
 let map;
 let geolocation;
 let userMarker;
+let baseMarker;
 let routePolyline;
 let userPosition;
+let basePosition;
+let baseName = "当前位置";
+let selectedCity = "无锡";
 let selectedPoiId = "";
+let selectedPlaceId = "";
 let toiletMarkers = [];
+let placeMarkers = [];
 let metroOverlays = [];
 let currentPois = [];
+let currentPlaces = [];
 let currentSearchRadius = 0;
 let currentTheme = localStorage.getItem(THEME_STORAGE_KEY) === "dark" ? "dark" : "light";
 
@@ -102,7 +112,7 @@ const initMap = async () => {
     if (!config.jsKey) {
       setStatus("缺少 Key", "error");
       els.dialog.showModal();
-      renderEmpty("后端没有配置 AMAP_JS_KEY。请参考 .env.example。");
+      renderEmpty("后端没有配置 AMAP_JS_KEY。请在 03_SourceCode/.env 中填写高德 JS API Key。");
       return;
     }
 
@@ -119,8 +129,8 @@ const initMap = async () => {
     });
 
     map = new AMapRef.Map("map", {
-      zoom: 15,
-      center: [116.397428, 39.90923],
+      zoom: 12,
+      center: [120.31191, 31.49117],
       viewMode: "2D",
       mapStyle: MAP_STYLES[currentTheme],
     });
@@ -137,7 +147,7 @@ const initMap = async () => {
     });
 
     setStatus("已就绪", "ready");
-    locateUser(true);
+    locateUser(false);
   } catch (error) {
     console.error(error);
     setStatus("启动失败", "error");
@@ -148,28 +158,32 @@ const initMap = async () => {
 const locateUser = (searchAfterLocate = false) => {
   if (!geolocation || !map) return;
 
-  setStatus("定位中");
+  setStatus("\u5b9a\u4f4d\u4e2d");
   geolocation.getCurrentPosition((status, result) => {
     if (status !== "complete") {
-      setStatus("定位失败", "error");
-      renderEmpty(result?.message || "浏览器没有返回当前位置。");
+      setStatus("\u5b9a\u4f4d\u5931\u8d25", "error");
+      if (!basePosition) {
+        renderEmpty(result?.message || "\u6d4f\u89c8\u5668\u6ca1\u6709\u8fd4\u56de\u5f53\u524d\u4f4d\u7f6e\u3002\u53ef\u4ee5\u5148\u8f93\u5165\u57ce\u5e02\u548c\u5730\u70b9\u4f5c\u4e3a\u57fa\u51c6\u70b9\u3002");
+        useCity(true);
+      }
       return;
     }
 
     const position = [result.position.lng, result.position.lat];
     userPosition = position;
     setUserMarker(position);
-    map.setCenter(position);
-    map.setZoom(16);
-    setStatus("已定位", "ready");
 
+    if (!basePosition) {
+      setBasePoint(position, "\u5f53\u524d\u4f4d\u7f6e", { zoom: 15, loadMetro: true });
+    }
+
+    setStatus("\u5df2\u5b9a\u4f4d", "ready");
     if (searchAfterLocate) {
+      setBasePoint(position, "\u5f53\u524d\u4f4d\u7f6e", { zoom: 15, loadMetro: true });
       searchToilets();
-      loadMetroForCurrentCity();
     }
   });
 };
-
 const setUserMarker = (position) => {
   if (userMarker) {
     userMarker.setPosition(position);
@@ -180,20 +194,126 @@ const setUserMarker = (position) => {
     position,
     content: '<div class="user-marker"></div>',
     offset: new AMapRef.Pixel(-9, -9),
-    zIndex: 200,
+    zIndex: 240,
   });
   map.add(userMarker);
 };
 
+const setBasePoint = (position, name, options = {}) => {
+  if (!position || !map) return;
+  basePosition = position;
+  baseName = name || "已选地点";
+  selectedCity = els.city.value.trim() || selectedCity;
+
+  if (baseMarker) {
+    baseMarker.setPosition(position);
+    baseMarker.setTitle(baseName);
+  } else {
+    baseMarker = new AMapRef.Marker({
+      position,
+      content: '<div class="base-marker">基</div>',
+      offset: new AMapRef.Pixel(-14, -32),
+      title: baseName,
+      zIndex: 230,
+    });
+    map.add(baseMarker);
+  }
+
+  map.setCenter(position);
+  if (options.zoom) map.setZoom(options.zoom);
+  if (options.loadMetro) loadMetroForBase(selectedCity);
+};
+
+const useCity = async (silent = false) => {
+  const city = els.city.value.trim();
+  if (!city) {
+    renderEmpty("请先输入城市。");
+    return;
+  }
+
+  selectedCity = city;
+  clearRoute();
+  clearToiletMarkers();
+  clearPlaceMarkers();
+  selectedPoiId = "";
+  selectedPlaceId = "";
+  currentPois = [];
+  currentPlaces = [];
+  if (!silent) setStatus("切换城市");
+
+  try {
+    const result = await apiGet("/api/places", {
+      mode: "city",
+      city,
+    });
+    const cityPlace = result.places?.[0];
+    if (!cityPlace) throw new Error("没有找到这个城市的位置");
+
+    const position = getDestinationLocation(cityPlace);
+    setBasePoint(position, city, { zoom: 12, loadMetro: true });
+    renderEmpty(`已切换到 ${city}。可以在上方输入具体地点，再点击“选地点”。`, {
+      title: `${city} 地图`,
+      eyebrow: "城市",
+    });
+    setStatus("已切换", "ready");
+  } catch (error) {
+    console.error(error);
+    setStatus("城市失败", "error");
+    renderEmpty(error.message || "城市定位失败，请检查城市名称。");
+  }
+};
+
+const searchPlaces = async () => {
+  const city = els.city.value.trim();
+  const keywords = els.place.value.trim();
+  if (!city) {
+    renderEmpty("请先输入城市。");
+    return;
+  }
+  if (!keywords) {
+    renderEmpty("请输入要作为基准点的小区、商场、地铁站或地址。");
+    return;
+  }
+
+  selectedCity = city;
+  clearRoute();
+  clearToiletMarkers();
+  selectedPoiId = "";
+  selectedPlaceId = "";
+  setStatus("找地点");
+  els.placeButton.disabled = true;
+
+  try {
+    const result = await apiGet("/api/places", {
+      city,
+      keywords,
+      limit: 10,
+    });
+    currentPlaces = result.places || [];
+    renderPlaces(currentPlaces);
+    drawPlaceMarkers(currentPlaces);
+    fitAllMarkers();
+    setStatus("请选择地点", "ready");
+  } catch (error) {
+    console.error(error);
+    setStatus("地点失败", "error");
+    clearPlaceMarkers();
+    renderEmpty(error.message || "没有找到这个地点，请换一个关键词。");
+  } finally {
+    els.placeButton.disabled = false;
+  }
+};
+
 const searchToilets = async () => {
-  if (!userPosition) {
+  if (!basePosition) {
     locateUser(true);
     return;
   }
 
   clearRoute();
+  clearPlaceMarkers();
   selectedPoiId = "";
-  const keyword = els.keyword.value.trim() || "公共厕所";
+  selectedPlaceId = "";
   const radius = Number(els.radius.value);
   currentSearchRadius = radius;
   setStatus("搜索中");
@@ -201,10 +321,11 @@ const searchToilets = async () => {
 
   try {
     const result = await apiGet("/api/toilets", {
-      lng: userPosition[0],
-      lat: userPosition[1],
+      lng: basePosition[0],
+      lat: basePosition[1],
       radius,
-      keywords: keyword,
+      keywords: "公共厕所",
+      limit: 100,
     });
 
     currentPois = result.pois || [];
@@ -224,12 +345,13 @@ const searchToilets = async () => {
 
 const startNavigation = async (poi) => {
   const destination = getDestinationLocation(poi);
-  if (!userPosition || !destination) return;
+  const origin = userPosition || basePosition;
+  if (!origin || !destination) return;
 
   setStatus("规划中");
   try {
     const route = await apiGet("/api/navigation", {
-      origin: userPosition.join(","),
+      origin: origin.join(","),
       destination: `${destination[0]},${destination[1]}`,
       type: "walking",
     });
@@ -245,11 +367,14 @@ const startNavigation = async (poi) => {
 };
 
 const getDestinationLocation = (target) => {
-  if (Array.isArray(target.location) && target.location.length >= 2) {
+  if (Array.isArray(target?.location) && target.location.length >= 2) {
     return target.location;
   }
-  if (target.location && Number.isFinite(Number(target.location.lng)) && Number.isFinite(Number(target.location.lat))) {
+  if (target?.location && Number.isFinite(Number(target.location.lng)) && Number.isFinite(Number(target.location.lat))) {
     return [Number(target.location.lng), Number(target.location.lat)];
+  }
+  if (Number.isFinite(Number(target?.longitude)) && Number.isFinite(Number(target?.latitude))) {
+    return [Number(target.longitude), Number(target.latitude)];
   }
   return null;
 };
@@ -270,6 +395,13 @@ const clearToiletMarkers = () => {
   toiletMarkers = [];
 };
 
+const clearPlaceMarkers = () => {
+  if (placeMarkers.length) {
+    map.remove(placeMarkers);
+  }
+  placeMarkers = [];
+};
+
 const clearRoute = () => {
   if (routePolyline) {
     map.remove(routePolyline);
@@ -284,13 +416,14 @@ const clearMetro = () => {
   metroOverlays = [];
 };
 
-const loadMetroForCurrentCity = async () => {
-  if (!userPosition || !map) return;
+const loadMetroForBase = async (cityOverride = "") => {
+  if (!basePosition || !map) return;
 
   try {
     const result = await apiGet("/api/metro/nearby", {
-      lng: userPosition[0],
-      lat: userPosition[1],
+      lng: basePosition[0],
+      lat: basePosition[1],
+      debugCity: cityOverride || selectedCity,
     });
 
     if (!result.hasMetro || !result.lines?.length) {
@@ -310,31 +443,58 @@ const drawMetro = (lines) => {
   const overlays = [];
 
   lines.forEach((line) => {
-    line.stations.filter((station) => station.location).forEach((station) => {
-      const marker = new AMapRef.Marker({
-        position: station.location,
-        content: `<div class="metro-station status-${station.toilet}" title="${escapeHtml(station.name)}"></div>`,
-        offset: new AMapRef.Pixel(-9, -9),
-        title: station.name,
-        zIndex: 220,
-      });
+    line.stations
+      .filter((station) => station.location)
+      .forEach((station) => {
+        const marker = new AMapRef.Marker({
+          position: station.location,
+          content: `<div class="metro-station status-${station.toilet}" title="${escapeHtml(station.name)}"></div>`,
+          offset: new AMapRef.Pixel(-9, -9),
+          title: station.name,
+          zIndex: 220,
+        });
 
-      marker.on("click", () => renderMetroStationDetail(line, station));
-      overlays.push(marker);
-    });
+        marker.on("click", () => renderMetroStationDetail(line, station));
+        overlays.push(marker);
+      });
   });
 
   metroOverlays = overlays;
   map.add(metroOverlays);
 };
 
+const drawPlaceMarkers = (places) => {
+  clearPlaceMarkers();
+  placeMarkers = places
+    .map((place, index) => {
+      const position = getDestinationLocation(place);
+      if (!position) return null;
+      const marker = new AMapRef.Marker({
+        position,
+        content: '<div class="place-marker">点</div>',
+        offset: new AMapRef.Pixel(-14, -14),
+        title: place.name,
+        zIndex: 150 + index,
+      });
+
+      marker.placeId = getPoiKey(place);
+      marker.on("click", () => selectPlace(place, { zoom: false }));
+      return marker;
+    })
+    .filter(Boolean);
+
+  map.add(placeMarkers);
+  updatePlaceSelection();
+};
+
 const drawToiletMarkers = (pois) => {
   clearToiletMarkers();
   toiletMarkers = pois
-    .filter((poi) => poi.location)
     .map((poi, index) => {
+      const position = getDestinationLocation(poi);
+      if (!position) return null;
       const marker = new AMapRef.Marker({
-        position: [poi.location.lng, poi.location.lat],
+        position,
         content: '<div class="toilet-marker">厕</div>',
         offset: new AMapRef.Pixel(-14, -14),
         title: poi.name,
@@ -345,7 +505,8 @@ const drawToiletMarkers = (pois) => {
       marker.on("click", () => selectPoi(poi, { zoom: false }));
 
       return marker;
-    });
+    })
+    .filter(Boolean);
 
   map.add(toiletMarkers);
   updateMarkerSelection();
@@ -355,8 +516,18 @@ const drawRoute = (points) => {
   clearRoute();
   if (!points.length) return;
 
+  const path = points
+    .map((point) => {
+      if (Array.isArray(point)) return point;
+      if (Number.isFinite(Number(point.longitude)) && Number.isFinite(Number(point.latitude))) {
+        return [Number(point.longitude), Number(point.latitude)];
+      }
+      return null;
+    })
+    .filter(Boolean);
+
   routePolyline = new AMapRef.Polyline({
-    path: points,
+    path,
     isOutline: true,
     outlineColor: "#ffffff",
     borderWeight: 2,
@@ -369,16 +540,28 @@ const drawRoute = (points) => {
   });
 
   map.add(routePolyline);
-  const overlays = [userMarker, routePolyline, ...toiletMarkers].filter(Boolean);
+  const overlays = [userMarker, baseMarker, routePolyline, ...toiletMarkers, ...placeMarkers].filter(Boolean);
   map.setFitView(overlays, false, [110, 70, 250, 70]);
 };
 
+const selectPlace = (place, options = {}) => {
+  const position = getDestinationLocation(place);
+  if (!position) return;
+
+  clearRoute();
+  selectedPlaceId = getPoiKey(place);
+  setBasePoint(position, place.name, { zoom: options.zoom === false ? null : 16, loadMetro: true });
+  renderPlaceDetail(place);
+  updatePlaceSelection();
+  setStatus("已选地点", "ready");
+};
+
 const selectPoi = (poi, options = {}) => {
-  if (!poi.location) return;
+  const position = getDestinationLocation(poi);
+  if (!position) return;
 
   clearRoute();
   selectedPoiId = getPoiKey(poi);
-  const position = [poi.location.lng, poi.location.lat];
   map.setCenter(position);
   if (options.zoom !== false) {
     map.setZoom(17);
@@ -386,6 +569,14 @@ const selectPoi = (poi, options = {}) => {
   renderPoiDetail(poi);
   updateMarkerSelection();
   setStatus("已选择", "ready");
+};
+
+const updatePlaceSelection = () => {
+  placeMarkers.forEach((marker) => {
+    const active = marker.placeId && marker.placeId === selectedPlaceId;
+    marker.setContent(`<div class="place-marker${active ? " selected" : ""}">点</div>`);
+    setMarkerZIndex(marker, active ? 310 : 150);
+  });
 };
 
 const updateMarkerSelection = () => {
@@ -396,9 +587,42 @@ const updateMarkerSelection = () => {
   });
 };
 
+const renderPlaces = (places) => {
+  els.drawerEyebrow.textContent = "地点候选";
+  els.resultTitle.textContent = els.place.value.trim() || "搜索地点";
+  els.resultCount.textContent = String(places.length);
+  els.resultList.className = "result-list";
+  els.resultList.innerHTML = "";
+
+  if (!places.length) {
+    renderEmpty("没有找到地点，请换一个关键词。");
+    return;
+  }
+
+  const fragment = document.createDocumentFragment();
+  places.forEach((place) => {
+    const card = document.createElement("article");
+    card.className = "result-card place-card";
+    card.innerHTML = `
+      <button class="result-main" type="button">
+        <strong>${escapeHtml(place.name)}</strong>
+        <span>${escapeHtml(place.address || place.district || "暂无地址")}</span>
+        <span>${escapeHtml(place.type || "地点")}</span>
+      </button>
+      <button class="route-button" type="button">选定</button>
+    `;
+
+    card.querySelector(".result-main").addEventListener("click", () => selectPlace(place));
+    card.querySelector(".route-button").addEventListener("click", () => selectPlace(place));
+    fragment.appendChild(card);
+  });
+
+  els.resultList.appendChild(fragment);
+};
+
 const renderPois = (pois) => {
-  els.drawerEyebrow.textContent = "结果";
-  els.resultTitle.textContent = currentSearchRadius ? `${formatDistance(currentSearchRadius)} 内公共厕所` : "附近公共厕所";
+  els.drawerEyebrow.textContent = "厕所";
+  els.resultTitle.textContent = `${baseName} · ${formatDistance(currentSearchRadius)} 内`;
   els.resultCount.textContent = String(pois.length);
   els.resultList.className = "result-list";
   els.resultList.innerHTML = "";
@@ -429,8 +653,37 @@ const renderPois = (pois) => {
   els.resultList.appendChild(fragment);
 };
 
+const renderPlaceDetail = (place) => {
+  els.drawerEyebrow.textContent = "基准地点";
+  els.resultTitle.textContent = place.name;
+  els.resultCount.textContent = "点";
+  els.resultList.className = "result-list detail-mode";
+  els.resultList.innerHTML = `
+    <article class="poi-detail">
+      <div class="poi-detail-main">
+        <strong>${escapeHtml(place.name)}</strong>
+        <span>${escapeHtml(place.address || place.district || "暂无地址")}</span>
+        <span>${escapeHtml(place.type || "地点")}</span>
+      </div>
+      <div class="detail-actions">
+        <button id="searchAroundButton" class="route-button large" type="button">查找周围厕所</button>
+        <button id="backToPlacesButton" class="ghost-button" type="button">返回候选</button>
+      </div>
+    </article>
+  `;
+
+  document.querySelector("#searchAroundButton").addEventListener("click", searchToilets);
+  document.querySelector("#backToPlacesButton").addEventListener("click", () => {
+    selectedPlaceId = "";
+    updatePlaceSelection();
+    renderPlaces(currentPlaces);
+    fitAllMarkers();
+    setStatus("请选择地点", "ready");
+  });
+};
+
 const renderPoiDetail = (poi) => {
-  els.drawerEyebrow.textContent = "地点详情";
+  els.drawerEyebrow.textContent = "厕所详情";
   els.resultTitle.textContent = poi.name;
   els.resultCount.textContent = formatDistance(poi.distance);
   els.resultList.className = "result-list detail-mode";
@@ -524,22 +777,22 @@ const getMetroToiletStatus = (value) => {
   return { shortText: "未知", text: "厕所情况不确定" };
 };
 
-const renderEmpty = (message) => {
-  els.drawerEyebrow.textContent = "结果";
-  els.resultTitle.textContent = "等待搜索";
+const renderEmpty = (message, options = {}) => {
+  els.drawerEyebrow.textContent = options.eyebrow || "结果";
+  els.resultTitle.textContent = options.title || "等待搜索";
   els.resultCount.textContent = "0";
   els.resultList.className = "result-list";
   els.resultList.innerHTML = `<p class="empty-state">${escapeHtml(message)}</p>`;
 };
 
 const fitAllMarkers = () => {
-  const overlays = [userMarker, routePolyline, ...toiletMarkers].filter(Boolean);
+  const overlays = [userMarker, baseMarker, routePolyline, ...placeMarkers, ...toiletMarkers].filter(Boolean);
   if (map && overlays.length) {
     map.setFitView(overlays, false, [110, 70, 250, 70]);
   }
 };
 
-const getPoiKey = (poi) => poi.id || `${poi.location?.lng},${poi.location?.lat},${poi.name}`;
+const getPoiKey = (poi) => poi.id || `${poi.location?.lng || poi.longitude},${poi.location?.lat || poi.latitude},${poi.name}`;
 
 const setMarkerZIndex = (marker, zIndex) => {
   if (typeof marker.setzIndex === "function") {
@@ -573,12 +826,20 @@ const escapeHtml = (value) =>
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
 
+els.cityButton.addEventListener("click", () => useCity(false));
+els.placeButton.addEventListener("click", searchPlaces);
 els.search.addEventListener("click", searchToilets);
 els.locate.addEventListener("click", () => locateUser(true));
 els.fit.addEventListener("click", fitAllMarkers);
 els.config.addEventListener("click", () => els.dialog.showModal());
 els.theme.addEventListener("click", toggleTheme);
+els.city.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") useCity(false);
+});
+els.place.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") searchPlaces();
+});
 
 applyTheme(currentTheme);
-renderEmpty("启动后会自动定位并搜索附近公共厕所。");
+renderEmpty("启动后会默认切换到无锡。也可以手动输入城市，再选择具体地点作为查找厕所的基准点。");
 initMap();

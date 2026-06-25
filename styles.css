@@ -157,7 +157,7 @@ h2 {
   left: max(360px, calc(20vw + 48px));
   right: 92px;
   display: grid;
-  grid-template-columns: minmax(160px, 1fr) 120px 92px;
+  grid-template-columns: minmax(96px, 0.7fr) 92px minmax(220px, 1.7fr) 118px 92px 96px;
   gap: 10px;
   padding: 10px;
   border-radius: 8px;
@@ -197,6 +197,7 @@ h2 {
 }
 
 .primary-button,
+.secondary-button,
 .ghost-button,
 .tool-button {
   border: 0;
@@ -213,6 +214,20 @@ h2 {
 }
 
 .primary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.secondary-button {
+  align-self: end;
+  min-height: 40px;
+  padding: 0 13px;
+  color: var(--ink);
+  background: var(--ghost);
+  font-weight: 700;
+}
+
+.secondary-button:disabled {
   cursor: not-allowed;
   opacity: 0.58;
 }
@@ -498,18 +513,23 @@ h2 {
   background: var(--ghost);
 }
 
-.toilet-marker {
+.toilet-marker,
+.place-marker,
+.base-marker {
   display: grid;
   place-items: center;
   width: 28px;
   height: 28px;
-  border: 3px solid var(--green);
   border-radius: 50%;
-  color: var(--green);
   background: var(--card);
   box-shadow: 0 8px 24px rgba(21, 31, 25, 0.2);
   font-size: 16px;
   font-weight: 800;
+}
+
+.toilet-marker {
+  border: 3px solid var(--green);
+  color: var(--green);
 }
 
 .toilet-marker.selected {
@@ -517,6 +537,37 @@ h2 {
   color: #fff;
   background: var(--blue);
   transform: scale(1.18);
+}
+
+.place-marker {
+  border: 3px solid var(--blue);
+  color: var(--blue);
+}
+
+.place-marker.selected {
+  color: #fff;
+  background: var(--blue);
+  transform: scale(1.18);
+}
+
+.base-marker {
+  width: 30px;
+  height: 30px;
+  border: 3px solid #fff;
+  border-radius: 8px 8px 8px 2px;
+  color: #fff;
+  background: var(--blue);
+  transform: rotate(-45deg);
+}
+
+.base-marker::after {
+  content: "基";
+  transform: rotate(45deg);
+  font-size: 14px;
+}
+
+.base-marker {
+  font-size: 0;
 }
 
 .metro-station {
@@ -576,8 +627,14 @@ h2 {
     grid-template-columns: 1fr 96px;
   }
 
+  .place-field,
   .search-panel .primary-button {
     grid-column: 1 / -1;
+  }
+
+  .search-panel .secondary-button {
+    min-width: 0;
+    padding: 0 10px;
   }
 
   .map-tools {

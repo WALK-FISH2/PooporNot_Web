@@ -18,21 +18,27 @@
         <div class="status-pill" id="statusPill">启动中</div>
       </section>
 
-      <section class="search-panel" aria-label="搜索附近厕所">
-        <label class="search-field">
-          <span>关键词</span>
-          <input id="keywordInput" type="text" value="公共厕所" autocomplete="off" />
+      <section class="search-panel" aria-label="选择城市和基准地点">
+        <label class="search-field city-field">
+          <span>城市</span>
+          <input id="cityInput" type="text" value="无锡" autocomplete="off" />
+        </label>
+        <button id="cityButton" class="secondary-button" type="button">切换城市</button>
+        <label class="search-field place-field">
+          <span>地点</span>
+          <input id="placeInput" type="text" placeholder="小区、商场、地铁站或地址" autocomplete="off" />
         </label>
         <label class="search-field compact">
           <span>半径</span>
           <select id="radiusSelect">
             <option value="300">300 m</option>
-            <option value="500" selected>500 m</option>
-            <option value="1000">1 km</option>
+            <option value="500">500 m</option>
+            <option value="1000" selected>1 km</option>
             <option value="3000">3 km</option>
           </select>
         </label>
-        <button id="searchButton" class="primary-button" type="button">搜索</button>
+        <button id="placeButton" class="secondary-button" type="button">选地点</button>
+        <button id="searchButton" class="primary-button" type="button">查厕所</button>
       </section>
 
       <nav class="map-tools" aria-label="地图工具">
@@ -50,7 +56,7 @@
         </button>
       </nav>
 
-      <aside class="result-drawer" aria-label="附近厕所列表">
+      <aside class="result-drawer" aria-label="结果列表">
         <div class="drawer-head">
           <div>
             <p class="eyebrow" id="drawerEyebrow">结果</p>
@@ -71,8 +77,8 @@
             <button class="ghost-button" value="cancel" type="submit">关闭</button>
           </div>
           <p class="dialog-copy">
-            在项目目录创建 <code>.env</code>，参考 <code>.env.example</code> 填入
-            <code>AMAP_JS_KEY</code> 和 <code>AMAP_WEB_SERVICE_KEY</code>。
+            在 <code>03_SourceCode/.env</code> 中填写 <code>AMAP_JS_KEY</code>、<code>AMAP_SECURITY_JS_CODE</code>
+            和 <code>AMAP_WEB_SERVICE_KEY</code>。网页和小程序可以共用这个后端。
           </p>
         </form>
       </dialog>
