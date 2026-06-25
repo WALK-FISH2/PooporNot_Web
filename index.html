@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>拉了么</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <div id="map" class="map-surface" aria-label="厕所地图"></div>
+
+      <section class="brand-panel" aria-label="应用状态">
+        <div>
+          <p class="eyebrow">拉了么</p>
+          <h1>附近厕所</h1>
+        </div>
+        <div class="status-pill" id="statusPill">启动中</div>
+      </section>
+
+      <section class="search-panel" aria-label="搜索附近厕所">
+        <label class="search-field">
+          <span>关键词</span>
+          <input id="keywordInput" type="text" value="公共厕所" autocomplete="off" />
+        </label>
+        <label class="search-field compact">
+          <span>半径</span>
+          <select id="radiusSelect">
+            <option value="1000">1 km</option>
+            <option value="3000" selected>3 km</option>
+            <option value="5000">5 km</option>
+            <option value="10000">10 km</option>
+          </select>
+        </label>
+        <button id="searchButton" class="primary-button" type="button">搜索</button>
+      </section>
+
+      <nav class="map-tools" aria-label="地图工具">
+        <button id="locateButton" class="tool-button" type="button" title="定位">
+          <span aria-hidden="true">◎</span>
+        </button>
+        <button id="fitButton" class="tool-button" type="button" title="查看全部结果">
+          <span aria-hidden="true">□</span>
+        </button>
+        <button id="configButton" class="tool-button" type="button" title="查看配置说明">
+          <span aria-hidden="true">?</span>
+        </button>
+        <button id="themeButton" class="tool-button" type="button" title="切换夜晚版" aria-label="切换夜晚版">
+          <span id="themeIcon" aria-hidden="true">☾</span>
+        </button>
+      </nav>
+
+      <aside class="result-drawer" aria-label="附近厕所列表">
+        <div class="drawer-head">
+          <div>
+            <p class="eyebrow" id="drawerEyebrow">结果</p>
+            <h2 id="resultTitle">等待搜索</h2>
+          </div>
+          <span id="resultCount">0</span>
+        </div>
+        <div id="resultList" class="result-list"></div>
+      </aside>
+
+      <dialog id="configDialog" class="config-dialog">
+        <form method="dialog" class="config-form">
+          <div class="dialog-head">
+            <div>
+              <p class="eyebrow">后端配置</p>
+              <h2>Key 填在 .env</h2>
+            </div>
+            <button class="ghost-button" value="cancel" type="submit">关闭</button>
+          </div>
+          <p class="dialog-copy">
+            在项目目录创建 <code>.env</code>，参考 <code>.env.example</code> 填入
+            <code>AMAP_JS_KEY</code> 和 <code>AMAP_WEB_SERVICE_KEY</code>。
+          </p>
+        </form>
+      </dialog>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
