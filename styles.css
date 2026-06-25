@@ -152,7 +152,7 @@ h2 {
 
 .search-panel {
   top: 18px;
-  left: 250px;
+  left: max(360px, calc(20vw + 48px));
   right: 92px;
   display: grid;
   grid-template-columns: minmax(160px, 1fr) 120px 92px;
@@ -240,12 +240,14 @@ h2 {
 }
 
 .result-drawer {
+  top: 104px;
   left: 18px;
-  right: 18px;
   bottom: 18px;
+  width: clamp(300px, 20vw, 390px);
+  min-height: 0;
   display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
   gap: 10px;
-  max-height: min(42vh, 360px);
   padding: 12px;
   border-radius: 8px;
 }
@@ -270,10 +272,28 @@ h2 {
 
 .result-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  grid-template-columns: 1fr;
+  align-content: start;
   gap: 8px;
-  overflow: auto;
-  padding-right: 2px;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+  scrollbar-color: rgba(104, 115, 108, 0.62) transparent;
+  scrollbar-width: thin;
+}
+
+.result-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.result-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.result-list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(104, 115, 108, 0.55);
 }
 
 .result-list.detail-mode {
@@ -488,8 +508,10 @@ h2 {
   }
 
   .result-drawer {
+    top: auto;
     left: 12px;
     right: 12px;
+    width: auto;
     bottom: 12px;
     max-height: 36vh;
   }
@@ -509,5 +531,17 @@ h2 {
   .detail-actions {
     display: grid;
     grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (min-width: 761px) and (max-width: 1040px) {
+  .search-panel {
+    left: 18px;
+    top: 88px;
+    right: 84px;
+  }
+
+  .result-drawer {
+    top: 160px;
   }
 }
