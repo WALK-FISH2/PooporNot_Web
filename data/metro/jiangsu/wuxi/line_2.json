@@ -1,0 +1,30 @@
+{
+  "id": "wuxi_line_2",
+  "name": "Wuxi Metro Line 2",
+  "displayName": "无锡地铁2号线",
+  "color": "#00a651",
+  "source": "AMap POI station list, manual toilet status",
+  "stations": [
+    { "name": "梅园开原寺", "toilet": 1 },
+    { "name": "荣巷", "toilet": 1 },
+    { "name": "小桃源", "toilet": 1 },
+    { "name": "河埒口", "toilet": 1 },
+    { "name": "大王基", "toilet": 1 },
+    { "name": "梁溪大桥", "toilet": 1 },
+    { "name": "五爱广场", "toilet": 1 },
+    { "name": "三阳广场", "toilet": 1 },
+    { "name": "东林广场", "toilet": 1 },
+    { "name": "上马墩", "toilet": 1 },
+    { "name": "靖海", "toilet": 1 },
+    { "name": "广益", "toilet": 1 },
+    { "name": "柏庄", "toilet": 1 },
+    { "name": "东亭", "toilet": 1 },
+    { "name": "庄桥", "toilet": 1 },
+    { "name": "云林", "toilet": 1 },
+    { "name": "九里河公园", "toilet": 1 },
+    { "name": "查桥", "toilet": 1 },
+    { "name": "映月湖公园", "toilet": 1 },
+    { "name": "迎宾广场", "toilet": 1 },
+    { "name": "无锡东站", "toilet": 1 }
+  ]
+}

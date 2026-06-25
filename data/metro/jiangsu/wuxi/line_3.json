@@ -1,0 +1,30 @@
+{
+  "id": "wuxi_line_3",
+  "name": "Wuxi Metro Line 3",
+  "displayName": "无锡地铁3号线",
+  "color": "#0072ce",
+  "source": "AMap POI station list, manual toilet status",
+  "stations": [
+    { "name": "苏庙", "toilet": 1 },
+    { "name": "钱桥", "toilet": 1 },
+    { "name": "龙山梢", "toilet": 1 },
+    { "name": "石门路", "toilet": 1 },
+    { "name": "盛岸", "toilet": 1 },
+    { "name": "吴桥", "toilet": 1 },
+    { "name": "北栅口", "toilet": 1 },
+    { "name": "无锡火车站", "toilet": 1 },
+    { "name": "广瑞", "toilet": 1 },
+    { "name": "靖海", "toilet": 1 },
+    { "name": "东风", "toilet": 1 },
+    { "name": "叙丰", "toilet": 1 },
+    { "name": "太湖花园", "toilet": 1 },
+    { "name": "新光路", "toilet": 1 },
+    { "name": "旺庄路", "toilet": 1 },
+    { "name": "黄山路", "toilet": 1 },
+    { "name": "高浪东路", "toilet": 1 },
+    { "name": "周泾巷", "toilet": 1 },
+    { "name": "无锡新区站", "toilet": 1 },
+    { "name": "长江南路", "toilet": 1 },
+    { "name": "硕放机场", "toilet": 1 }
+  ]
+}

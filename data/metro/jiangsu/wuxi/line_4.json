@@ -1,0 +1,26 @@
+{
+  "id": "wuxi_line_4",
+  "name": "Wuxi Metro Line 4",
+  "displayName": "无锡地铁4号线",
+  "color": "#7f3f98",
+  "source": "AMap POI station list, manual toilet status",
+  "stations": [
+    { "name": "刘潭", "toilet": 1 },
+    { "name": "黄巷", "toilet": 1 },
+    { "name": "盛岸", "toilet": 1 },
+    { "name": "惠山古镇", "toilet": 1 },
+    { "name": "青山湾荣院", "toilet": 1 },
+    { "name": "河埒口", "toilet": 1 },
+    { "name": "西园弄", "toilet": 1 },
+    { "name": "体育中心", "toilet": 1 },
+    { "name": "夏家边", "toilet": 1 },
+    { "name": "蠡湖大桥", "toilet": 1 },
+    { "name": "大剧院", "toilet": 1 },
+    { "name": "五湖大道", "toilet": 1 },
+    { "name": "周新苑", "toilet": 1 },
+    { "name": "市民中心", "toilet": 1 },
+    { "name": "吴都路", "toilet": 1 },
+    { "name": "丰润道", "toilet": 1 },
+    { "name": "博览中心", "toilet": 1 }
+  ]
+}

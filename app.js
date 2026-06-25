@@ -30,6 +30,7 @@ let routePolyline;
 let userPosition;
 let selectedPoiId = "";
 let toiletMarkers = [];
+let metroOverlays = [];
 let currentPois = [];
 let currentSearchRadius = 0;
 let currentTheme = localStorage.getItem(THEME_STORAGE_KEY) === "dark" ? "dark" : "light";
@@ -164,6 +165,7 @@ const locateUser = (searchAfterLocate = false) => {
 
     if (searchAfterLocate) {
       searchToilets();
+      loadMetroForCurrentCity();
     }
   });
 };
@@ -221,13 +223,14 @@ const searchToilets = async () => {
 };
 
 const startNavigation = async (poi) => {
-  if (!userPosition || !poi.location) return;
+  const destination = getDestinationLocation(poi);
+  if (!userPosition || !destination) return;
 
   setStatus("规划中");
   try {
     const route = await apiGet("/api/navigation", {
       origin: userPosition.join(","),
-      destination: `${poi.location.lng},${poi.location.lat}`,
+      destination: `${destination[0]},${destination[1]}`,
       type: "walking",
     });
 
@@ -241,6 +244,25 @@ const startNavigation = async (poi) => {
   }
 };
 
+const getDestinationLocation = (target) => {
+  if (Array.isArray(target.location) && target.location.length >= 2) {
+    return target.location;
+  }
+  if (target.location && Number.isFinite(Number(target.location.lng)) && Number.isFinite(Number(target.location.lat))) {
+    return [Number(target.location.lng), Number(target.location.lat)];
+  }
+  return null;
+};
+
+const getMetroNavigationTarget = (line, station) => ({
+  kind: "metro",
+  name: station.name,
+  address: line.displayName || line.name,
+  location: station.location,
+  line,
+  station,
+});
+
 const clearToiletMarkers = () => {
   if (toiletMarkers.length) {
     map.remove(toiletMarkers);
@@ -253,6 +275,57 @@ const clearRoute = () => {
     map.remove(routePolyline);
     routePolyline = null;
   }
+};
+
+const clearMetro = () => {
+  if (metroOverlays.length) {
+    map.remove(metroOverlays);
+  }
+  metroOverlays = [];
+};
+
+const loadMetroForCurrentCity = async () => {
+  if (!userPosition || !map) return;
+
+  try {
+    const result = await apiGet("/api/metro/nearby", {
+      lng: userPosition[0],
+      lat: userPosition[1],
+    });
+
+    if (!result.hasMetro || !result.lines?.length) {
+      clearMetro();
+      return;
+    }
+
+    drawMetro(result.lines);
+  } catch (error) {
+    console.warn("Metro data unavailable", error);
+    clearMetro();
+  }
+};
+
+const drawMetro = (lines) => {
+  clearMetro();
+  const overlays = [];
+
+  lines.forEach((line) => {
+    line.stations.filter((station) => station.location).forEach((station) => {
+      const marker = new AMapRef.Marker({
+        position: station.location,
+        content: `<div class="metro-station status-${station.toilet}" title="${escapeHtml(station.name)}"></div>`,
+        offset: new AMapRef.Pixel(-9, -9),
+        title: station.name,
+        zIndex: 220,
+      });
+
+      marker.on("click", () => renderMetroStationDetail(line, station));
+      overlays.push(marker);
+    });
+  });
+
+  metroOverlays = overlays;
+  map.add(metroOverlays);
 };
 
 const drawToiletMarkers = (pois) => {
@@ -400,7 +473,11 @@ const renderRouteSummary = (poi, route) => {
 
   document.querySelector("#backToDetailButton").addEventListener("click", () => {
     clearRoute();
-    renderPoiDetail(poi);
+    if (poi.kind === "metro") {
+      renderMetroStationDetail(poi.line, poi.station);
+    } else {
+      renderPoiDetail(poi);
+    }
     updateMarkerSelection();
     setStatus("已选择", "ready");
   });
@@ -412,6 +489,39 @@ const renderRouteError = (poi, message) => {
   els.resultCount.textContent = "!";
   els.resultList.className = "result-list detail-mode";
   els.resultList.innerHTML = `<p class="empty-state">${escapeHtml(message)}</p>`;
+};
+
+const renderMetroStationDetail = (line, station) => {
+  const status = getMetroToiletStatus(station.toilet);
+  els.drawerEyebrow.textContent = line.displayName || line.name;
+  els.resultTitle.textContent = station.name;
+  els.resultCount.textContent = status.shortText;
+  els.resultList.className = "result-list detail-mode";
+  els.resultList.innerHTML = `
+    <article class="metro-detail">
+      <div class="metro-line-chip" style="--line-color: ${escapeHtml(line.color || "#888888")}">
+        <span></span>
+        <strong>${escapeHtml(line.displayName || line.name)}</strong>
+      </div>
+      <div class="metro-status status-${station.toilet}">
+        <strong>${escapeHtml(status.text)}</strong>
+        <span>${escapeHtml(station.name)} · ${escapeHtml(line.displayName || line.name)}</span>
+      </div>
+      <div class="detail-actions">
+        <button id="metroRouteButton" class="route-button large" type="button">路线</button>
+      </div>
+    </article>
+  `;
+
+  document.querySelector("#metroRouteButton").addEventListener("click", () => {
+    startNavigation(getMetroNavigationTarget(line, station));
+  });
+};
+
+const getMetroToiletStatus = (value) => {
+  if (Number(value) === 1) return { shortText: "有", text: "有厕所" };
+  if (Number(value) === 0) return { shortText: "无", text: "无厕所" };
+  return { shortText: "未知", text: "厕所情况不确定" };
 };
 
 const renderEmpty = (message) => {

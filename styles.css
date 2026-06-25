@@ -10,6 +10,7 @@
   --green: #18a058;
   --red: #d94841;
   --blue: #2374ab;
+  --unknown: #8b9490;
   --map-fallback: #d9e3d8;
   --grid-line: rgba(255, 255, 255, 0.36);
   --page-bg: #e8ece8;
@@ -30,6 +31,7 @@
   --green: #35c979;
   --red: #ff6b63;
   --blue: #5eb1ff;
+  --unknown: #9aa5a0;
   --map-fallback: #131a17;
   --grid-line: rgba(255, 255, 255, 0.08);
   --page-bg: #0f1512;
@@ -399,6 +401,54 @@ h2 {
   background: var(--card);
 }
 
+.metro-detail {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--card);
+}
+
+.metro-line-chip {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.metro-line-chip span {
+  width: 34px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--line-color);
+}
+
+.metro-line-chip strong,
+.metro-status strong {
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.metro-status {
+  display: grid;
+  gap: 6px;
+  border-left: 4px solid var(--unknown);
+  padding-left: 10px;
+}
+
+.metro-status.status-1 {
+  border-left-color: var(--green);
+}
+
+.metro-status.status-0 {
+  border-left-color: var(--red);
+}
+
+.metro-status span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .dialog-copy {
   margin: 0;
   color: var(--muted);
@@ -467,6 +517,39 @@ h2 {
   color: #fff;
   background: var(--blue);
   transform: scale(1.18);
+}
+
+.metro-station {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: var(--unknown);
+  box-shadow:
+    0 0 0 2px rgba(24, 32, 27, 0.2),
+    0 5px 16px rgba(0, 0, 0, 0.36);
+}
+
+.metro-station::after {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.metro-station.status-1 {
+  background: var(--green);
+}
+
+.metro-station.status-0 {
+  background: var(--red);
+}
+
+.metro-station.status-2 {
+  background: var(--unknown);
 }
 
 .user-marker {
