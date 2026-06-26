@@ -9,6 +9,8 @@ import {
   searchPlaces,
   ToiletPoi,
 } from "../../services/api";
+import { TENCENT_MAP_STYLE_DARK, TENCENT_MAP_STYLE_LIGHT, TENCENT_MAP_SUBKEY } from "../../config/api";
+import { CITY_GROUPS, RECOMMENDED_CITIES } from "../../data/cities";
 
 type PanelMode = "places" | "toilets" | "metro" | "detail" | "route" | "empty";
 type DetailType = "place" | "toilet" | "metro";
@@ -76,6 +78,8 @@ Component({
     latitude: 31.49117,
     longitude: 120.31191,
     scale: 12,
+    mapSubkey: TENCENT_MAP_SUBKEY,
+    mapLayerStyle: TENCENT_MAP_STYLE_LIGHT,
     markers: [] as MapMarker[],
     polyline: [] as MapPolyline[],
     places: [] as PlaceView[],
@@ -96,6 +100,12 @@ Component({
     userLocation: null as LngLat | null,
     baseLocation: null as LngLat | null,
     radiusOptions: ["300 m", "500 m", "1 km", "3 km"],
+    cityPanelVisible: false,
+    recommendedCities: RECOMMENDED_CITIES,
+    cityGroups: CITY_GROUPS,
+    cityLetters: CITY_GROUPS.map((group) => group.letter),
+    activeCityLetter: "A",
+    visibleCities: CITY_GROUPS[0].cities,
     metroCity: "",
     metroMessage: "当前城市暂无地铁厕所数据",
   },
@@ -107,6 +117,8 @@ Component({
   },
 
   methods: {
+    noop() {},
+
     async bootstrap() {
       this.setData({ radiusText: this.formatDistance(this.data.radius) });
       try {
@@ -123,7 +135,7 @@ Component({
           resultCount: "0",
         });
         await this.loadMetro(location);
-        this.refreshMarkers();
+        await this.searchToilets(location);
       } catch (error) {
         console.warn("location unavailable", error);
         await this.useCity(true);
@@ -225,18 +237,45 @@ Component({
         const center = location || this.data.baseLocation || this.getCurrentCenter();
         const result = await loadMetroForLocation(center, city || "");
         const metroStations = this.toMetroViews(result.stations);
-        this.setData({
+        const update: Record<string, unknown> = {
           metroStations,
           metroCity: result.city,
           metroMessage: result.hasMetro ? "该城市地铁数据暂未匹配到站点" : `${result.city || "当前城市"}暂无地铁厕所数据`,
-        });
+        };
+        if (!city && result.city) {
+          update.cityKeyword = result.city;
+        }
+        this.setData(update);
       } catch (error) {
         console.warn("metro load failed", error);
       }
     },
 
-    onCityInput(event: any) {
-      this.setData({ cityKeyword: event.detail.value });
+    onCityPickerTap() {
+      this.setData({ cityPanelVisible: true });
+    },
+
+    onCityPanelClose() {
+      this.setData({ cityPanelVisible: false });
+    },
+
+    onCityLetterTap(event: any) {
+      const letter = String(event.currentTarget.dataset.letter || "A");
+      const group = CITY_GROUPS.find((item) => item.letter === letter) || CITY_GROUPS[0];
+      this.setData({
+        activeCityLetter: group.letter,
+        visibleCities: group.cities,
+      });
+    },
+
+    onCitySelectTap(event: any) {
+      const city = String(event.currentTarget.dataset.city || "");
+      if (!city) return;
+      this.setData({
+        cityKeyword: city,
+        cityPanelVisible: false,
+      });
+      this.useCity(false);
     },
 
     onPlaceInput(event: any) {
@@ -269,7 +308,7 @@ Component({
           statusText: "已定位",
         });
         await this.loadMetro(location);
-        this.refreshMarkers();
+        await this.searchToilets(location);
       } catch (error) {
         this.showError(error);
       }
@@ -284,7 +323,11 @@ Component({
     },
 
     onThemeTap() {
-      this.setData({ darkMode: !this.data.darkMode });
+      const darkMode = !this.data.darkMode;
+      this.setData({
+        darkMode,
+        mapLayerStyle: darkMode ? TENCENT_MAP_STYLE_DARK : TENCENT_MAP_STYLE_LIGHT,
+      });
     },
 
     onShowToiletsTap() {
@@ -493,7 +536,7 @@ Component({
               iconPath: "/assets/metro_gray.png",
               title: this.data.baseName,
               zIndex: 200,
-              label: this.markerLabel("基", "#2374ab"),
+              label: this.markerLabel("我", "#2374ab"),
             },
           ]
         : [];

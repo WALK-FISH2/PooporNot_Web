@@ -9,6 +9,8 @@
       show-location
       markers="{{markers}}"
       polyline="{{polyline}}"
+      subkey="{{mapSubkey}}"
+      layer-style="{{mapLayerStyle}}"
       bindmarkertap="onMarkerTap"
     />
 
@@ -21,22 +23,22 @@
     </cover-view>
 
     <cover-view class="tools">
-      <cover-view class="tool" bindtap="onLocateTap">◎</cover-view>
-      <cover-view class="tool" bindtap="onSearchTap">搜</cover-view>
-      <cover-view class="tool" bindtap="onShowMetroTap">铁</cover-view>
+      <cover-view class="tool locate-tool" bindtap="onLocateTap">
+        <cover-image class="locate-icon" src="/assets/icon_location.webp"></cover-image>
+      </cover-view>
       <cover-view class="tool" bindtap="onThemeTap">{{darkMode ? '日' : '夜'}}</cover-view>
     </cover-view>
   </view>
 
   <view class="panel">
     <view class="search-box">
-      <view class="city-row">
-        <input class="input city-input" value="{{cityKeyword}}" placeholder="城市" bindinput="onCityInput" confirm-type="done" />
-        <button class="small-button secondary" bindtap="onCityTap">城市</button>
-      </view>
-      <view class="place-row">
+      <view class="search-line">
+        <view class="city-select" bindtap="onCityPickerTap">
+          <text class="city-select-name">{{cityKeyword || '城市'}}</text>
+          <text class="city-select-arrow">▾</text>
+        </view>
         <input class="input place-input" value="{{placeKeyword}}" placeholder="小区、商场、地铁站或地址" bindinput="onPlaceInput" confirm-type="search" bindconfirm="onPlaceSearchTap" />
-        <button class="small-button secondary" bindtap="onPlaceSearchTap">地点</button>
+        <button class="small-button secondary" bindtap="onPlaceSearchTap">搜地点</button>
       </view>
       <view class="action-row">
         <picker mode="selector" range="{{radiusOptions}}" bindchange="onRadiusChange">
@@ -52,11 +54,6 @@
         <view class="panel-title">{{resultTitle}}</view>
       </view>
       <view class="count">{{resultCount}}</view>
-    </view>
-
-    <view class="filters">
-      <button class="filter" bindtap="onShowToiletsTap">厕所</button>
-      <button class="filter" bindtap="onShowMetroTap">地铁</button>
     </view>
 
     <scroll-view class="list" scroll-y>
@@ -112,5 +109,30 @@
 
       <view wx:else class="empty">暂无结果</view>
     </scroll-view>
+  </view>
+
+  <view wx:if="{{cityPanelVisible}}" class="city-mask" catchtap="onCityPanelClose">
+    <view class="city-sheet" catchtap="noop">
+      <view class="city-sheet-head">
+        <text class="city-sheet-title">选择城市</text>
+        <text class="city-close" bindtap="onCityPanelClose">×</text>
+      </view>
+      <scroll-view class="city-scroll" scroll-y>
+        <view class="city-section-title">推荐城市</view>
+        <view class="city-chip-grid recommended-grid">
+          <view wx:for="{{recommendedCities}}" wx:key="*this" class="city-chip" data-city="{{item}}" bindtap="onCitySelectTap">{{item}}</view>
+        </view>
+
+        <view class="city-section-title">城市开头字母</view>
+        <view class="letter-grid">
+          <view wx:for="{{cityLetters}}" wx:key="*this" class="letter-chip {{activeCityLetter === item ? 'active' : ''}}" data-letter="{{item}}" bindtap="onCityLetterTap">{{item}}</view>
+        </view>
+
+        <view class="letter-title">{{activeCityLetter}}</view>
+        <view class="city-list">
+          <view wx:for="{{visibleCities}}" wx:key="*this" class="city-list-item" data-city="{{item}}" bindtap="onCitySelectTap">{{item}}</view>
+        </view>
+      </scroll-view>
+    </view>
   </view>
 </view>

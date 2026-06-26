@@ -26,8 +26,8 @@ scroll-view {
 
 .map-wrap {
   position: relative;
-  height: calc(100vh - 560rpx);
-  min-height: 500rpx;
+  height: calc(100vh - 640rpx);
+  min-height: 430rpx;
 }
 
 .map {
@@ -106,6 +106,15 @@ scroll-view {
   box-shadow: 0 10rpx 28rpx rgba(21, 31, 25, 0.16);
 }
 
+.locate-tool {
+  position: relative;
+}
+
+.locate-icon {
+  width: 44rpx;
+  height: 54rpx;
+}
+
 .dark .tool {
   color: #eef5ee;
   background: rgba(20, 25, 22, 0.94);
@@ -114,7 +123,7 @@ scroll-view {
 .panel {
   display: flex;
   flex-direction: column;
-  height: 560rpx;
+  height: 640rpx;
   padding: 18rpx 22rpx calc(18rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
   border-top-left-radius: 18rpx;
@@ -134,14 +143,51 @@ scroll-view {
   margin-bottom: 16rpx;
 }
 
-.city-row,
-.place-row,
+.search-line,
 .action-row {
   display: flex;
   gap: 12rpx;
   align-items: center;
   width: 100%;
   min-width: 0;
+}
+
+.city-select {
+  flex: 0 0 150rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6rpx;
+  width: 150rpx;
+  min-width: 0;
+  height: 64rpx;
+  border-radius: 10rpx;
+  color: #17211b;
+  background: #edf1ee;
+  font-size: 25rpx;
+  font-weight: 700;
+}
+
+.city-select-name {
+  max-width: 104rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.city-select-arrow {
+  color: #68736c;
+  font-size: 24rpx;
+  line-height: 1;
+}
+
+.dark .city-select {
+  color: #eef5ee;
+  background: #26302a;
+}
+
+.dark .city-select-arrow {
+  color: #a7b2ac;
 }
 
 .input {
@@ -182,9 +228,9 @@ scroll-view {
 }
 
 .small-button {
-  flex: 0 0 132rpx;
-  width: 132rpx;
-  max-width: 132rpx;
+  flex: 0 0 142rpx;
+  width: 142rpx;
+  max-width: 142rpx;
   overflow: hidden;
   white-space: nowrap;
 }
@@ -263,16 +309,6 @@ scroll-view {
 .dark .count {
   color: #101511;
   background: #eef5ee;
-}
-
-.filters {
-  display: flex;
-  gap: 12rpx;
-  margin: 12rpx 0 12rpx;
-}
-
-.filters .filter {
-  flex: 1;
 }
 
 picker {
@@ -374,4 +410,142 @@ picker {
   padding: 28rpx 4rpx;
   color: #68736c;
   font-size: 26rpx;
+}
+
+.city-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: flex-end;
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.city-sheet {
+  width: 100%;
+  max-height: 86vh;
+  padding: 28rpx 24rpx calc(28rpx + env(safe-area-inset-bottom));
+  border-top-left-radius: 28rpx;
+  border-top-right-radius: 28rpx;
+  background: #fff;
+}
+
+.dark .city-sheet {
+  background: #141916;
+}
+
+.city-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18rpx;
+}
+
+.city-sheet-title {
+  color: #17211b;
+  font-size: 34rpx;
+  font-weight: 800;
+}
+
+.dark .city-sheet-title {
+  color: #eef5ee;
+}
+
+.city-close {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  color: #68736c;
+  background: #f2f4f3;
+  font-size: 46rpx;
+  line-height: 58rpx;
+  text-align: center;
+}
+
+.city-scroll {
+  max-height: calc(86vh - 130rpx);
+}
+
+.city-section-title,
+.letter-title {
+  margin: 20rpx 0 16rpx;
+  color: #8a918d;
+  font-size: 28rpx;
+}
+
+.city-chip-grid,
+.letter-grid {
+  display: grid;
+  gap: 18rpx;
+}
+
+.recommended-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.letter-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.city-chip,
+.letter-chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  height: 70rpx;
+  border-radius: 24rpx;
+  color: #151a17;
+  background: #f3f4f3;
+  font-size: 30rpx;
+}
+
+.letter-chip {
+  height: 62rpx;
+  border-radius: 22rpx;
+  font-size: 28rpx;
+}
+
+.letter-chip.active {
+  color: #fff;
+  background: #18a058;
+}
+
+.city-list {
+  border-top: 1rpx solid rgba(24, 32, 27, 0.08);
+}
+
+.city-list-item {
+  height: 92rpx;
+  border-bottom: 1rpx solid rgba(24, 32, 27, 0.08);
+  color: #151a17;
+  font-size: 32rpx;
+  line-height: 92rpx;
+}
+
+.dark .city-section-title,
+.dark .letter-title,
+.dark .city-close {
+  color: #a7b2ac;
+}
+
+.dark .city-chip,
+.dark .letter-chip,
+.dark .city-close {
+  background: #26302a;
+  color: #eef5ee;
+}
+
+.dark .letter-chip.active {
+  color: #fff;
+  background: #18a058;
+}
+
+.dark .city-list,
+.dark .city-list-item {
+  border-color: rgba(238, 245, 238, 0.12);
+}
+
+.dark .city-list-item {
+  color: #eef5ee;
 }
