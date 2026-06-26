@@ -1,0 +1,117 @@
+{
+  "id": "nanjing_line_7",
+  "name": "Nanjing Metro Line 7",
+  "displayName": "南京地铁7号线",
+  "color": "#006B54",
+  "source": "Public route/station references, manual toilet status pending",
+  "stations": [
+    {
+      "name": "仙新路",
+      "toilet": 2
+    },
+    {
+      "name": "尧化门",
+      "toilet": 2
+    },
+    {
+      "name": "尧化新村",
+      "toilet": 2
+    },
+    {
+      "name": "丁家庄南",
+      "toilet": 2
+    },
+    {
+      "name": "丁家庄",
+      "toilet": 2
+    },
+    {
+      "name": "万寿",
+      "toilet": 2
+    },
+    {
+      "name": "晓庄",
+      "toilet": 2
+    },
+    {
+      "name": "幕府山",
+      "toilet": 2
+    },
+    {
+      "name": "五塘广场",
+      "toilet": 2
+    },
+    {
+      "name": "幕府西路",
+      "toilet": 2
+    },
+    {
+      "name": "钟阜路",
+      "toilet": 2
+    },
+    {
+      "name": "福建路",
+      "toilet": 2
+    },
+    {
+      "name": "古平岗",
+      "toilet": 2
+    },
+    {
+      "name": "草场门",
+      "toilet": 2
+    },
+    {
+      "name": "清凉山",
+      "toilet": 2
+    },
+    {
+      "name": "莫愁湖",
+      "toilet": 2
+    },
+    {
+      "name": "大士茶亭",
+      "toilet": 2
+    },
+    {
+      "name": "南湖",
+      "toilet": 2
+    },
+    {
+      "name": "应天大街",
+      "toilet": 2
+    },
+    {
+      "name": "梦都大街东",
+      "toilet": 2
+    },
+    {
+      "name": "新城科技园",
+      "toilet": 2
+    },
+    {
+      "name": "中胜",
+      "toilet": 2
+    },
+    {
+      "name": "嘉陵江东街",
+      "toilet": 2
+    },
+    {
+      "name": "永初路",
+      "toilet": 2
+    },
+    {
+      "name": "太清路",
+      "toilet": 2
+    },
+    {
+      "name": "螺塘路",
+      "toilet": 2
+    },
+    {
+      "name": "西善桥",
+      "toilet": 2
+    }
+  ]
+}

@@ -1,0 +1,314 @@
+[
+  {
+    "province": "北京",
+    "provinceSlug": "beijing",
+    "city": "北京",
+    "citySlug": "beijing"
+  },
+  {
+    "province": "天津",
+    "provinceSlug": "tianjin",
+    "city": "天津",
+    "citySlug": "tianjin"
+  },
+  {
+    "province": "河北",
+    "provinceSlug": "hebei",
+    "city": "石家庄",
+    "citySlug": "shijiazhuang"
+  },
+  {
+    "province": "山西",
+    "provinceSlug": "shanxi",
+    "city": "太原",
+    "citySlug": "taiyuan"
+  },
+  {
+    "province": "内蒙古",
+    "provinceSlug": "inner_mongolia",
+    "city": "呼和浩特",
+    "citySlug": "hohhot"
+  },
+  {
+    "province": "辽宁",
+    "provinceSlug": "liaoning",
+    "city": "沈阳",
+    "citySlug": "shenyang"
+  },
+  {
+    "province": "辽宁",
+    "provinceSlug": "liaoning",
+    "city": "大连",
+    "citySlug": "dalian"
+  },
+  {
+    "province": "吉林",
+    "provinceSlug": "jilin",
+    "city": "长春",
+    "citySlug": "changchun"
+  },
+  {
+    "province": "黑龙江",
+    "provinceSlug": "heilongjiang",
+    "city": "哈尔滨",
+    "citySlug": "harbin"
+  },
+  {
+    "province": "上海",
+    "provinceSlug": "shanghai",
+    "city": "上海",
+    "citySlug": "shanghai"
+  },
+  {
+    "province": "江苏",
+    "provinceSlug": "jiangsu",
+    "city": "南京",
+    "citySlug": "nanjing"
+  },
+  {
+    "province": "江苏",
+    "provinceSlug": "jiangsu",
+    "city": "无锡",
+    "citySlug": "wuxi"
+  },
+  {
+    "province": "江苏",
+    "provinceSlug": "jiangsu",
+    "city": "徐州",
+    "citySlug": "xuzhou"
+  },
+  {
+    "province": "江苏",
+    "provinceSlug": "jiangsu",
+    "city": "常州",
+    "citySlug": "changzhou"
+  },
+  {
+    "province": "江苏",
+    "provinceSlug": "jiangsu",
+    "city": "苏州",
+    "citySlug": "suzhou"
+  },
+  {
+    "province": "江苏",
+    "provinceSlug": "jiangsu",
+    "city": "南通",
+    "citySlug": "nantong"
+  },
+  {
+    "province": "江苏",
+    "provinceSlug": "jiangsu",
+    "city": "镇江",
+    "citySlug": "zhenjiang"
+  },
+  {
+    "province": "浙江",
+    "provinceSlug": "zhejiang",
+    "city": "杭州",
+    "citySlug": "hangzhou"
+  },
+  {
+    "province": "浙江",
+    "provinceSlug": "zhejiang",
+    "city": "宁波",
+    "citySlug": "ningbo"
+  },
+  {
+    "province": "浙江",
+    "provinceSlug": "zhejiang",
+    "city": "温州",
+    "citySlug": "wenzhou"
+  },
+  {
+    "province": "浙江",
+    "provinceSlug": "zhejiang",
+    "city": "绍兴",
+    "citySlug": "shaoxing"
+  },
+  {
+    "province": "浙江",
+    "provinceSlug": "zhejiang",
+    "city": "台州",
+    "citySlug": "taizhou"
+  },
+  {
+    "province": "浙江",
+    "provinceSlug": "zhejiang",
+    "city": "金华",
+    "citySlug": "jinhua"
+  },
+  {
+    "province": "浙江",
+    "provinceSlug": "zhejiang",
+    "city": "嘉兴",
+    "citySlug": "jiaxing"
+  },
+  {
+    "province": "安徽",
+    "provinceSlug": "anhui",
+    "city": "合肥",
+    "citySlug": "hefei"
+  },
+  {
+    "province": "安徽",
+    "provinceSlug": "anhui",
+    "city": "芜湖",
+    "citySlug": "wuhu"
+  },
+  {
+    "province": "安徽",
+    "provinceSlug": "anhui",
+    "city": "滁州",
+    "citySlug": "chuzhou"
+  },
+  {
+    "province": "安徽",
+    "provinceSlug": "anhui",
+    "city": "马鞍山",
+    "citySlug": "maanshan"
+  },
+  {
+    "province": "福建",
+    "provinceSlug": "fujian",
+    "city": "福州",
+    "citySlug": "fuzhou"
+  },
+  {
+    "province": "福建",
+    "provinceSlug": "fujian",
+    "city": "厦门",
+    "citySlug": "xiamen"
+  },
+  {
+    "province": "江西",
+    "provinceSlug": "jiangxi",
+    "city": "南昌",
+    "citySlug": "nanchang"
+  },
+  {
+    "province": "山东",
+    "provinceSlug": "shandong",
+    "city": "济南",
+    "citySlug": "jinan"
+  },
+  {
+    "province": "山东",
+    "provinceSlug": "shandong",
+    "city": "青岛",
+    "citySlug": "qingdao"
+  },
+  {
+    "province": "河南",
+    "provinceSlug": "henan",
+    "city": "郑州",
+    "citySlug": "zhengzhou"
+  },
+  {
+    "province": "河南",
+    "provinceSlug": "henan",
+    "city": "洛阳",
+    "citySlug": "luoyang"
+  },
+  {
+    "province": "河南",
+    "provinceSlug": "henan",
+    "city": "许昌",
+    "citySlug": "xuchang"
+  },
+  {
+    "province": "湖北",
+    "provinceSlug": "hubei",
+    "city": "武汉",
+    "citySlug": "wuhan"
+  },
+  {
+    "province": "湖南",
+    "provinceSlug": "hunan",
+    "city": "长沙",
+    "citySlug": "changsha"
+  },
+  {
+    "province": "广东",
+    "provinceSlug": "guangdong",
+    "city": "广州",
+    "citySlug": "guangzhou"
+  },
+  {
+    "province": "广东",
+    "provinceSlug": "guangdong",
+    "city": "深圳",
+    "citySlug": "shenzhen"
+  },
+  {
+    "province": "广东",
+    "provinceSlug": "guangdong",
+    "city": "佛山",
+    "citySlug": "foshan"
+  },
+  {
+    "province": "广东",
+    "provinceSlug": "guangdong",
+    "city": "东莞",
+    "citySlug": "dongguan"
+  },
+  {
+    "province": "广西",
+    "provinceSlug": "guangxi",
+    "city": "南宁",
+    "citySlug": "nanning"
+  },
+  {
+    "province": "重庆",
+    "provinceSlug": "chongqing",
+    "city": "重庆",
+    "citySlug": "chongqing"
+  },
+  {
+    "province": "四川",
+    "provinceSlug": "sichuan",
+    "city": "成都",
+    "citySlug": "chengdu"
+  },
+  {
+    "province": "贵州",
+    "provinceSlug": "guizhou",
+    "city": "贵阳",
+    "citySlug": "guiyang"
+  },
+  {
+    "province": "云南",
+    "provinceSlug": "yunnan",
+    "city": "昆明",
+    "citySlug": "kunming"
+  },
+  {
+    "province": "陕西",
+    "provinceSlug": "shaanxi",
+    "city": "西安",
+    "citySlug": "xian"
+  },
+  {
+    "province": "甘肃",
+    "provinceSlug": "gansu",
+    "city": "兰州",
+    "citySlug": "lanzhou"
+  },
+  {
+    "province": "新疆",
+    "provinceSlug": "xinjiang",
+    "city": "乌鲁木齐",
+    "citySlug": "urumqi"
+  },
+  {
+    "province": "香港",
+    "provinceSlug": "hong_kong",
+    "city": "香港",
+    "citySlug": "hong_kong"
+  },
+  {
+    "province": "澳门",
+    "provinceSlug": "macau",
+    "city": "澳门",
+    "citySlug": "macau"
+  }
+]

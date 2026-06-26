@@ -1,0 +1,137 @@
+{
+  "id": "nanjing_line_1",
+  "name": "Nanjing Metro Line 1",
+  "displayName": "南京地铁1号线",
+  "color": "#0098D8",
+  "source": "Public route/station references, manual toilet status pending",
+  "stations": [
+    {
+      "name": "八卦洲大桥南",
+      "toilet": 2
+    },
+    {
+      "name": "笆斗山",
+      "toilet": 2
+    },
+    {
+      "name": "燕子矶",
+      "toilet": 2
+    },
+    {
+      "name": "吉祥庵",
+      "toilet": 2
+    },
+    {
+      "name": "晓庄",
+      "toilet": 2
+    },
+    {
+      "name": "迈皋桥",
+      "toilet": 2
+    },
+    {
+      "name": "红山动物园",
+      "toilet": 2
+    },
+    {
+      "name": "南京站",
+      "toilet": 2
+    },
+    {
+      "name": "新模范马路",
+      "toilet": 2
+    },
+    {
+      "name": "玄武门",
+      "toilet": 2
+    },
+    {
+      "name": "鼓楼",
+      "toilet": 2
+    },
+    {
+      "name": "珠江路",
+      "toilet": 2
+    },
+    {
+      "name": "新街口",
+      "toilet": 2
+    },
+    {
+      "name": "张府园",
+      "toilet": 2
+    },
+    {
+      "name": "三山街",
+      "toilet": 2
+    },
+    {
+      "name": "中华门",
+      "toilet": 2
+    },
+    {
+      "name": "安德门",
+      "toilet": 2
+    },
+    {
+      "name": "天隆寺",
+      "toilet": 2
+    },
+    {
+      "name": "软件大道",
+      "toilet": 2
+    },
+    {
+      "name": "花神庙",
+      "toilet": 2
+    },
+    {
+      "name": "南京南站",
+      "toilet": 2
+    },
+    {
+      "name": "双龙大道",
+      "toilet": 2
+    },
+    {
+      "name": "河定桥",
+      "toilet": 2
+    },
+    {
+      "name": "胜太路",
+      "toilet": 2
+    },
+    {
+      "name": "百家湖",
+      "toilet": 2
+    },
+    {
+      "name": "小龙湾",
+      "toilet": 2
+    },
+    {
+      "name": "竹山路",
+      "toilet": 2
+    },
+    {
+      "name": "天印大道",
+      "toilet": 2
+    },
+    {
+      "name": "龙眠大道",
+      "toilet": 2
+    },
+    {
+      "name": "南医大·江苏经贸学院",
+      "toilet": 2
+    },
+    {
+      "name": "南京交院",
+      "toilet": 2
+    },
+    {
+      "name": "中国药科大学",
+      "toilet": 2
+    }
+  ]
+}

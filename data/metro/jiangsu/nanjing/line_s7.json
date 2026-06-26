@@ -1,0 +1,45 @@
+{
+  "id": "nanjing_line_s7",
+  "name": "Nanjing Metro Line S7",
+  "displayName": "南京地铁S7号线",
+  "color": "#E782A9",
+  "source": "Public route/station references, manual toilet status pending",
+  "stations": [
+    {
+      "name": "空港新城江宁",
+      "toilet": 2
+    },
+    {
+      "name": "柘塘",
+      "toilet": 2
+    },
+    {
+      "name": "空港新城溧水",
+      "toilet": 2
+    },
+    {
+      "name": "群力",
+      "toilet": 2
+    },
+    {
+      "name": "卧龙湖",
+      "toilet": 2
+    },
+    {
+      "name": "溧水",
+      "toilet": 2
+    },
+    {
+      "name": "中山湖",
+      "toilet": 2
+    },
+    {
+      "name": "幸庄",
+      "toilet": 2
+    },
+    {
+      "name": "无想山",
+      "toilet": 2
+    }
+  ]
+}

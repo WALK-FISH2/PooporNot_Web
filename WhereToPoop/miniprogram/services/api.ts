@@ -110,6 +110,7 @@ export const loadMetroForLocation = (location: LngLat, city = "") =>
   apiRequest<MetroResult>("/api/metro/nearby", {
     lng: String(location.longitude),
     lat: String(location.latitude),
+    radius: "20000",
     debugCity: city || DEBUG_METRO_CITY,
   });
 

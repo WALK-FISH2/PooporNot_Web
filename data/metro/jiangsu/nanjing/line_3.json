@@ -1,0 +1,133 @@
+{
+  "id": "nanjing_line_3",
+  "name": "Nanjing Metro Line 3",
+  "displayName": "南京地铁3号线",
+  "color": "#00953A",
+  "source": "Public route/station references, manual toilet status pending",
+  "stations": [
+    {
+      "name": "林场",
+      "toilet": 2
+    },
+    {
+      "name": "星火路",
+      "toilet": 2
+    },
+    {
+      "name": "东大成贤学院",
+      "toilet": 2
+    },
+    {
+      "name": "泰冯路",
+      "toilet": 2
+    },
+    {
+      "name": "天润城",
+      "toilet": 2
+    },
+    {
+      "name": "柳洲东路",
+      "toilet": 2
+    },
+    {
+      "name": "上元门",
+      "toilet": 2
+    },
+    {
+      "name": "五塘广场",
+      "toilet": 2
+    },
+    {
+      "name": "小市",
+      "toilet": 2
+    },
+    {
+      "name": "南京站",
+      "toilet": 2
+    },
+    {
+      "name": "南京林业大学·新庄",
+      "toilet": 2
+    },
+    {
+      "name": "鸡鸣寺",
+      "toilet": 2
+    },
+    {
+      "name": "浮桥",
+      "toilet": 2
+    },
+    {
+      "name": "大行宫",
+      "toilet": 2
+    },
+    {
+      "name": "常府街",
+      "toilet": 2
+    },
+    {
+      "name": "夫子庙",
+      "toilet": 2
+    },
+    {
+      "name": "武定门",
+      "toilet": 2
+    },
+    {
+      "name": "雨花门",
+      "toilet": 2
+    },
+    {
+      "name": "卡子门",
+      "toilet": 2
+    },
+    {
+      "name": "大明路",
+      "toilet": 2
+    },
+    {
+      "name": "明发广场",
+      "toilet": 2
+    },
+    {
+      "name": "南京南站",
+      "toilet": 2
+    },
+    {
+      "name": "宏运大道",
+      "toilet": 2
+    },
+    {
+      "name": "胜太西路",
+      "toilet": 2
+    },
+    {
+      "name": "天元西路",
+      "toilet": 2
+    },
+    {
+      "name": "九龙湖",
+      "toilet": 2
+    },
+    {
+      "name": "诚信大道",
+      "toilet": 2
+    },
+    {
+      "name": "东大九龙湖校区",
+      "toilet": 2
+    },
+    {
+      "name": "秣周东路",
+      "toilet": 2
+    },
+    {
+      "name": "和风路",
+      "toilet": 2
+    },
+    {
+      "name": "秣陵",
+      "toilet": 2
+    }
+  ]
+}

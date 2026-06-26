@@ -5,6 +5,7 @@ const { URL } = require("node:url");
 
 const rootDir = __dirname;
 const metroDataDir = path.join(rootDir, "data", "metro");
+const metroCityIndexPath = path.join(metroDataDir, "city_index.json");
 loadEnv(path.join(rootDir, ".env"));
 
 const PORT = Number(process.env.PORT || 5173);
@@ -13,6 +14,7 @@ const AMAP_SECURITY_JS_CODE = process.env.AMAP_SECURITY_JS_CODE || "";
 const AMAP_WEB_SERVICE_KEY = process.env.AMAP_WEB_SERVICE_KEY || process.env.AMAP_KEY || "";
 const AMAP_PAGE_DELAY_MS = Number(process.env.AMAP_PAGE_DELAY_MS || 260);
 const metroCityStationCache = new Map();
+let metroCityIndexCache = null;
 
 const PROVINCE_SLUG_ALIASES = {
   江苏: "jiangsu",
@@ -245,6 +247,7 @@ async function handleNearbyMetro(reqUrl, res) {
 
   const lng = reqUrl.searchParams.get("lng");
   const lat = reqUrl.searchParams.get("lat");
+  const radius = clampNumber(reqUrl.searchParams.get("radius"), 1000, 50000, 20000);
   const debugCity = normalizeAmapName(reqUrl.searchParams.get("debugCity") || "");
   if (!isLngLat(lng, lat)) {
     return sendJson(res, { error: "当前基准点坐标无效" }, 400);
@@ -259,39 +262,70 @@ async function handleNearbyMetro(reqUrl, res) {
   }
 
   const city = debugCity || location.city;
-  const lines = readMetroLinesByCity(city);
-  if (!city || !lines.length) {
+  const center = { longitude: Number(lng), latitude: Number(lat) };
+  const candidateEntries = getMetroEntriesWithLineFiles();
+  if (!candidateEntries.length) {
     return sendJson(res, {
       city,
       hasMetro: false,
       location,
+      radius,
       lines: [],
       stations: [],
     });
   }
 
-  let stationIndex;
-  try {
-    stationIndex = await getCityMetroStationIndex(city);
-  } catch (error) {
-    console.warn("Metro station lookup failed", city, error.message || error);
-    return sendJson(res, {
-      city,
-      hasMetro: false,
-      location,
-      lines: [],
-      stations: [],
-    });
+  const nearbyLines = [];
+  const nearbyStations = [];
+
+  for (const entry of candidateEntries) {
+    const lines = readMetroLinesByEntry(entry);
+    if (!lines.length) continue;
+
+    let stationIndex;
+    try {
+      stationIndex = await getCityMetroStationIndex(entry.city);
+    } catch (error) {
+      console.warn("Metro station lookup failed", entry.city, error.message || error);
+      continue;
+    }
+
+    const hydratedLines = hydrateMetroLines(lines, stationIndex);
+    const stations = flattenMetroStations(hydratedLines)
+      .map((station) => ({
+        ...station,
+        city: entry.city,
+        province: entry.province,
+        distance: getDistanceMeters(center, { longitude: station.longitude, latitude: station.latitude }),
+      }))
+      .filter((station) => station.distance <= radius);
+
+    if (!stations.length) continue;
+    nearbyStations.push(...stations);
+    nearbyLines.push(
+      ...hydratedLines
+        .map((line) => ({
+          ...line,
+          city: entry.city,
+          province: entry.province,
+          stations: line.stations.filter((station) =>
+            stations.some((nearbyStation) => nearbyStation.lineId === line.id && nearbyStation.name === station.name),
+          ),
+        }))
+        .filter((line) => line.stations.length),
+    );
   }
-  const hydratedLines = hydrateMetroLines(lines, stationIndex);
-  const stations = flattenMetroStations(hydratedLines);
+
+  const dedupedStations = dedupeMetroStations(nearbyStations);
+  dedupedStations.sort((left, right) => left.distance - right.distance);
 
   return sendJson(res, {
     city,
-    hasMetro: true,
+    hasMetro: dedupedStations.length > 0,
     location,
-    lines: hydratedLines,
-    stations,
+    radius,
+    lines: nearbyLines,
+    stations: dedupedStations,
   });
 }
 
@@ -343,11 +377,17 @@ async function reverseGeocode(lng, lat) {
   };
 }
 
-function readMetroLinesByCity(city) {
-  const citySlug = slugifyCn(city);
-  if (citySlug !== "wuxi") return [];
 
-  const cityDir = path.join(metroDataDir, "jiangsu", "wuxi");
+function getMetroEntriesWithLineFiles() {
+  return loadMetroCityIndex().filter((entry) => {
+    const cityDir = path.join(metroDataDir, entry.provinceSlug, entry.citySlug);
+    if (!fs.existsSync(cityDir)) return false;
+    return fs.readdirSync(cityDir).some((fileName) => fileName.endsWith(".json"));
+  });
+}
+
+function readMetroLinesByEntry(entry) {
+  const cityDir = path.join(metroDataDir, entry.provinceSlug, entry.citySlug);
   if (!fs.existsSync(cityDir)) return [];
   return fs
     .readdirSync(cityDir)
@@ -366,12 +406,46 @@ function readMetroLinesByCity(city) {
     });
 }
 
+function readMetroLinesByCity(city) {
+  const entry = findMetroCityEntry(city);
+  if (!entry) return [];
+  return readMetroLinesByEntry(entry);
+}
+
+function findMetroCityEntry(city) {
+  const normalized = normalizeAmapName(city);
+  if (!normalized) return null;
+  const citySlug = slugifyCn(normalized);
+  return loadMetroCityIndex().find((entry) => normalizeAmapName(entry.city) === normalized || entry.citySlug === citySlug) || null;
+}
+
+function loadMetroCityIndex() {
+  if (metroCityIndexCache) return metroCityIndexCache;
+  if (!fs.existsSync(metroCityIndexPath)) {
+    metroCityIndexCache = [];
+    return metroCityIndexCache;
+  }
+  metroCityIndexCache = JSON.parse(fs.readFileSync(metroCityIndexPath, "utf8"));
+  return metroCityIndexCache;
+}
+
 function normalizeStation(station) {
   if (!station || !station.name) return null;
   return {
     name: station.name,
     toilet: [0, 1, 2].includes(Number(station.toilet)) ? Number(station.toilet) : 2,
   };
+}
+
+
+function dedupeMetroStations(stations) {
+  const seen = new Set();
+  return stations.filter((station) => {
+    const key = [station.lineId, station.name, station.longitude, station.latitude].join("|");
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 function hydrateMetroLines(lines, stationIndex) {
@@ -542,6 +616,18 @@ function normalizeStationName(value) {
 function slugifyCn(value) {
   const normalized = normalizeAmapName(value);
   return PROVINCE_SLUG_ALIASES[normalized] || CITY_SLUG_ALIASES[normalized] || normalized.toLowerCase().replace(/\s+/g, "-").replace(/[^\w-]/g, "");
+}
+
+
+function getDistanceMeters(from, to) {
+  const rad = Math.PI / 180;
+  const earthRadius = 6371000;
+  const lat1 = from.latitude * rad;
+  const lat2 = to.latitude * rad;
+  const deltaLat = (to.latitude - from.latitude) * rad;
+  const deltaLng = (to.longitude - from.longitude) * rad;
+  const a = Math.sin(deltaLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLng / 2) ** 2;
+  return 2 * earthRadius * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 function splitLngLat(value = "") {

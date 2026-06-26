@@ -1,0 +1,129 @@
+{
+  "id": "nanjing_line_5",
+  "name": "Nanjing Metro Line 5",
+  "displayName": "南京地铁5号线",
+  "color": "#FFCD00",
+  "source": "Public route/station references, manual toilet status pending",
+  "stations": [
+    {
+      "name": "吉印大道",
+      "toilet": 2
+    },
+    {
+      "name": "九龙湖南",
+      "toilet": 2
+    },
+    {
+      "name": "诚信大道",
+      "toilet": 2
+    },
+    {
+      "name": "前庄",
+      "toilet": 2
+    },
+    {
+      "name": "科宁路",
+      "toilet": 2
+    },
+    {
+      "name": "竹山路",
+      "toilet": 2
+    },
+    {
+      "name": "新亭路",
+      "toilet": 2
+    },
+    {
+      "name": "东山",
+      "toilet": 2
+    },
+    {
+      "name": "文靖路",
+      "toilet": 2
+    },
+    {
+      "name": "东山香樟园",
+      "toilet": 2
+    },
+    {
+      "name": "神机营",
+      "toilet": 2
+    },
+    {
+      "name": "大校场",
+      "toilet": 2
+    },
+    {
+      "name": "七桥瓮",
+      "toilet": 2
+    },
+    {
+      "name": "石门坎",
+      "toilet": 2
+    },
+    {
+      "name": "光华门",
+      "toilet": 2
+    },
+    {
+      "name": "通济门",
+      "toilet": 2
+    },
+    {
+      "name": "夫子庙",
+      "toilet": 2
+    },
+    {
+      "name": "三山街",
+      "toilet": 2
+    },
+    {
+      "name": "朝天宫",
+      "toilet": 2
+    },
+    {
+      "name": "上海路",
+      "toilet": 2
+    },
+    {
+      "name": "五台山",
+      "toilet": 2
+    },
+    {
+      "name": "云南路",
+      "toilet": 2
+    },
+    {
+      "name": "青春广场",
+      "toilet": 2
+    },
+    {
+      "name": "虹桥",
+      "toilet": 2
+    },
+    {
+      "name": "福建路",
+      "toilet": 2
+    },
+    {
+      "name": "盐仓桥",
+      "toilet": 2
+    },
+    {
+      "name": "下关",
+      "toilet": 2
+    },
+    {
+      "name": "静海寺",
+      "toilet": 2
+    },
+    {
+      "name": "南京西站",
+      "toilet": 2
+    },
+    {
+      "name": "方家营",
+      "toilet": 2
+    }
+  ]
+}

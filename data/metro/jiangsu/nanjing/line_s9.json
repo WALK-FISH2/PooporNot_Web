@@ -1,0 +1,33 @@
+{
+  "id": "nanjing_line_s9",
+  "name": "Nanjing Metro Line S9",
+  "displayName": "南京地铁S9号线",
+  "color": "#D7A900",
+  "source": "Public route/station references, manual toilet status pending",
+  "stations": [
+    {
+      "name": "翔宇路南",
+      "toilet": 2
+    },
+    {
+      "name": "铜山",
+      "toilet": 2
+    },
+    {
+      "name": "石湫",
+      "toilet": 2
+    },
+    {
+      "name": "明觉",
+      "toilet": 2
+    },
+    {
+      "name": "团结圩",
+      "toilet": 2
+    },
+    {
+      "name": "高淳",
+      "toilet": 2
+    }
+  ]
+}

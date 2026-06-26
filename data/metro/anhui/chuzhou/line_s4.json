@@ -1,0 +1,49 @@
+{
+  "id": "nanjing_line_s4",
+  "name": "Nanjing Metro Line S4",
+  "displayName": "南京地铁S4号线",
+  "color": "#00A0AF",
+  "source": "Public route/station references, manual toilet status pending",
+  "stations": [
+    {
+      "name": "滁州高铁站",
+      "toilet": 2
+    },
+    {
+      "name": "花博园",
+      "toilet": 2
+    },
+    {
+      "name": "琅琊山",
+      "toilet": 2
+    },
+    {
+      "name": "滁州政务中心",
+      "toilet": 2
+    },
+    {
+      "name": "苏滁商务中心",
+      "toilet": 2
+    },
+    {
+      "name": "大王郢",
+      "toilet": 2
+    },
+    {
+      "name": "林楼",
+      "toilet": 2
+    },
+    {
+      "name": "十二里半",
+      "toilet": 2
+    },
+    {
+      "name": "汊河新城",
+      "toilet": 2
+    },
+    {
+      "name": "汊河",
+      "toilet": 2
+    }
+  ]
+}

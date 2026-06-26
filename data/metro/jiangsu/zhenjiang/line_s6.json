@@ -1,0 +1,61 @@
+{
+  "id": "nanjing_line_s6",
+  "name": "Nanjing Metro Line S6",
+  "displayName": "南京地铁S6号线",
+  "color": "#B48BC8",
+  "source": "Public route/station references, manual toilet status pending",
+  "stations": [
+    {
+      "name": "马群",
+      "toilet": 2
+    },
+    {
+      "name": "百水桥",
+      "toilet": 2
+    },
+    {
+      "name": "麒麟门",
+      "toilet": 2
+    },
+    {
+      "name": "东郊小镇",
+      "toilet": 2
+    },
+    {
+      "name": "古泉",
+      "toilet": 2
+    },
+    {
+      "name": "南京猿人洞",
+      "toilet": 2
+    },
+    {
+      "name": "汤山",
+      "toilet": 2
+    },
+    {
+      "name": "泉都大街",
+      "toilet": 2
+    },
+    {
+      "name": "黄梅",
+      "toilet": 2
+    },
+    {
+      "name": "童世界",
+      "toilet": 2
+    },
+    {
+      "name": "华阳",
+      "toilet": 2
+    },
+    {
+      "name": "崇明",
+      "toilet": 2
+    },
+    {
+      "name": "句容",
+      "toilet": 2
+    }
+  ]
+}

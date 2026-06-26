@@ -1,0 +1,85 @@
+{
+  "id": "nanjing_line_s8",
+  "name": "Nanjing Metro Line S8",
+  "displayName": "南京地铁S8号线",
+  "color": "#F58220",
+  "source": "Public route/station references, manual toilet status pending",
+  "stations": [
+    {
+      "name": "长江大桥北",
+      "toilet": 2
+    },
+    {
+      "name": "毛纺厂路",
+      "toilet": 2
+    },
+    {
+      "name": "泰山新村",
+      "toilet": 2
+    },
+    {
+      "name": "泰冯路",
+      "toilet": 2
+    },
+    {
+      "name": "高新开发区",
+      "toilet": 2
+    },
+    {
+      "name": "信息工程大学",
+      "toilet": 2
+    },
+    {
+      "name": "卸甲甸",
+      "toilet": 2
+    },
+    {
+      "name": "大厂",
+      "toilet": 2
+    },
+    {
+      "name": "葛塘",
+      "toilet": 2
+    },
+    {
+      "name": "长芦",
+      "toilet": 2
+    },
+    {
+      "name": "化工园",
+      "toilet": 2
+    },
+    {
+      "name": "六合开发区",
+      "toilet": 2
+    },
+    {
+      "name": "龙池",
+      "toilet": 2
+    },
+    {
+      "name": "雄州",
+      "toilet": 2
+    },
+    {
+      "name": "凤凰山公园",
+      "toilet": 2
+    },
+    {
+      "name": "方州广场",
+      "toilet": 2
+    },
+    {
+      "name": "沈桥",
+      "toilet": 2
+    },
+    {
+      "name": "八百桥",
+      "toilet": 2
+    },
+    {
+      "name": "金牛湖",
+      "toilet": 2
+    }
+  ]
+}

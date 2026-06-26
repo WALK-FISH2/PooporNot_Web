@@ -1,0 +1,85 @@
+{
+  "id": "nanjing_line_s3",
+  "name": "Nanjing Metro Line S3",
+  "displayName": "南京地铁S3号线",
+  "color": "#B0008E",
+  "source": "Public route/station references, manual toilet status pending",
+  "stations": [
+    {
+      "name": "南京南站",
+      "toilet": 2
+    },
+    {
+      "name": "景明佳园",
+      "toilet": 2
+    },
+    {
+      "name": "铁心桥",
+      "toilet": 2
+    },
+    {
+      "name": "春江路",
+      "toilet": 2
+    },
+    {
+      "name": "贾西",
+      "toilet": 2
+    },
+    {
+      "name": "油坊桥",
+      "toilet": 2
+    },
+    {
+      "name": "永初路",
+      "toilet": 2
+    },
+    {
+      "name": "平良大街",
+      "toilet": 2
+    },
+    {
+      "name": "吴侯街",
+      "toilet": 2
+    },
+    {
+      "name": "高庙路",
+      "toilet": 2
+    },
+    {
+      "name": "天保",
+      "toilet": 2
+    },
+    {
+      "name": "刘村",
+      "toilet": 2
+    },
+    {
+      "name": "马骡圩",
+      "toilet": 2
+    },
+    {
+      "name": "兰花塘",
+      "toilet": 2
+    },
+    {
+      "name": "双垅",
+      "toilet": 2
+    },
+    {
+      "name": "石碛河",
+      "toilet": 2
+    },
+    {
+      "name": "桥林新城",
+      "toilet": 2
+    },
+    {
+      "name": "林山",
+      "toilet": 2
+    },
+    {
+      "name": "高家冲",
+      "toilet": 2
+    }
+  ]
+}

@@ -1,0 +1,73 @@
+{
+  "id": "nanjing_line_s2",
+  "name": "Nanjing Metro Line S2",
+  "displayName": "南京地铁S2号线",
+  "color": "#7C878E",
+  "source": "Public route/station references, manual toilet status pending",
+  "stations": [
+    {
+      "name": "西善桥",
+      "toilet": 2
+    },
+    {
+      "name": "雨花经济开发区",
+      "toilet": 2
+    },
+    {
+      "name": "板桥",
+      "toilet": 2
+    },
+    {
+      "name": "板桥南",
+      "toilet": 2
+    },
+    {
+      "name": "江宁镇",
+      "toilet": 2
+    },
+    {
+      "name": "江宁滨江开发区",
+      "toilet": 2
+    },
+    {
+      "name": "牧龙",
+      "toilet": 2
+    },
+    {
+      "name": "铜井",
+      "toilet": 2
+    },
+    {
+      "name": "慈湖高新区",
+      "toilet": 2
+    },
+    {
+      "name": "湖北路·二中",
+      "toilet": 2
+    },
+    {
+      "name": "湖南路·安工大",
+      "toilet": 2
+    },
+    {
+      "name": "雨山东路",
+      "toilet": 2
+    },
+    {
+      "name": "阳湖",
+      "toilet": 2
+    },
+    {
+      "name": "马鞍山经开区",
+      "toilet": 2
+    },
+    {
+      "name": "姑孰",
+      "toilet": 2
+    },
+    {
+      "name": "太白",
+      "toilet": 2
+    }
+  ]
+}

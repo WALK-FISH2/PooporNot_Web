@@ -423,41 +423,46 @@ const loadMetroForBase = async (cityOverride = "") => {
     const result = await apiGet("/api/metro/nearby", {
       lng: basePosition[0],
       lat: basePosition[1],
+      radius: 20000,
       debugCity: cityOverride || selectedCity,
     });
 
-    if (!result.hasMetro || !result.lines?.length) {
+    if (!result.hasMetro || !result.stations?.length) {
       clearMetro();
       return;
     }
 
-    drawMetro(result.lines);
+    drawMetro(result.stations);
   } catch (error) {
     console.warn("Metro data unavailable", error);
     clearMetro();
   }
 };
 
-const drawMetro = (lines) => {
+const drawMetro = (stations) => {
   clearMetro();
-  const overlays = [];
-
-  lines.forEach((line) => {
-    line.stations
-      .filter((station) => station.location)
-      .forEach((station) => {
-        const marker = new AMapRef.Marker({
-          position: station.location,
-          content: `<div class="metro-station status-${station.toilet}" title="${escapeHtml(station.name)}"></div>`,
-          offset: new AMapRef.Pixel(-9, -9),
-          title: station.name,
-          zIndex: 220,
-        });
-
-        marker.on("click", () => renderMetroStationDetail(line, station));
-        overlays.push(marker);
+  const overlays = stations
+    .map((station) => {
+      const position = getDestinationLocation(station);
+      if (!position) return null;
+      const line = {
+        id: station.lineId,
+        name: station.lineName,
+        displayName: station.lineName,
+        color: station.lineColor,
+      };
+      const marker = new AMapRef.Marker({
+        position,
+        content: `<div class="metro-station status-${station.toilet}" title="${escapeHtml(station.name)}"></div>`,
+        offset: new AMapRef.Pixel(-9, -9),
+        title: station.name,
+        zIndex: 220,
       });
-  });
+
+      marker.on("click", () => renderMetroStationDetail(line, { ...station, location: position }));
+      return marker;
+    })
+    .filter(Boolean);
 
   metroOverlays = overlays;
   map.add(metroOverlays);

@@ -1,0 +1,45 @@
+{
+  "id": "nanjing_line_s1",
+  "name": "Nanjing Metro Line S1",
+  "displayName": "南京地铁S1号线",
+  "color": "#00A3E0",
+  "source": "Public route/station references, manual toilet status pending",
+  "stations": [
+    {
+      "name": "南京南站",
+      "toilet": 2
+    },
+    {
+      "name": "翠屏山",
+      "toilet": 2
+    },
+    {
+      "name": "河海大学·佛城西路",
+      "toilet": 2
+    },
+    {
+      "name": "吉印大道",
+      "toilet": 2
+    },
+    {
+      "name": "正方中路",
+      "toilet": 2
+    },
+    {
+      "name": "翔宇路北",
+      "toilet": 2
+    },
+    {
+      "name": "翔宇路南",
+      "toilet": 2
+    },
+    {
+      "name": "禄口机场",
+      "toilet": 2
+    },
+    {
+      "name": "空港新城江宁",
+      "toilet": 2
+    }
+  ]
+}

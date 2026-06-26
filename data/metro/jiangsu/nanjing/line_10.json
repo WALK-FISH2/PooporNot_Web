@@ -1,0 +1,105 @@
+{
+  "id": "nanjing_line_10",
+  "name": "Nanjing Metro Line 10",
+  "displayName": "南京地铁10号线",
+  "color": "#C6A664",
+  "source": "Public route/station references, manual toilet status pending",
+  "stations": [
+    {
+      "name": "东麒路",
+      "toilet": 2
+    },
+    {
+      "name": "石杨路",
+      "toilet": 2
+    },
+    {
+      "name": "杨庄",
+      "toilet": 2
+    },
+    {
+      "name": "高桥门",
+      "toilet": 2
+    },
+    {
+      "name": "承天大道",
+      "toilet": 2
+    },
+    {
+      "name": "大校场",
+      "toilet": 2
+    },
+    {
+      "name": "机场跑道旧址",
+      "toilet": 2
+    },
+    {
+      "name": "卡子门",
+      "toilet": 2
+    },
+    {
+      "name": "雨花台",
+      "toilet": 2
+    },
+    {
+      "name": "共青团路",
+      "toilet": 2
+    },
+    {
+      "name": "安德门",
+      "toilet": 2
+    },
+    {
+      "name": "小行",
+      "toilet": 2
+    },
+    {
+      "name": "中胜",
+      "toilet": 2
+    },
+    {
+      "name": "元通",
+      "toilet": 2
+    },
+    {
+      "name": "奥体中心",
+      "toilet": 2
+    },
+    {
+      "name": "梦都大街",
+      "toilet": 2
+    },
+    {
+      "name": "绿博园",
+      "toilet": 2
+    },
+    {
+      "name": "江心洲",
+      "toilet": 2
+    },
+    {
+      "name": "临江·青奥体育公园",
+      "toilet": 2
+    },
+    {
+      "name": "浦口万汇城",
+      "toilet": 2
+    },
+    {
+      "name": "南京工业大学",
+      "toilet": 2
+    },
+    {
+      "name": "龙华路",
+      "toilet": 2
+    },
+    {
+      "name": "文德路",
+      "toilet": 2
+    },
+    {
+      "name": "雨山路",
+      "toilet": 2
+    }
+  ]
+}

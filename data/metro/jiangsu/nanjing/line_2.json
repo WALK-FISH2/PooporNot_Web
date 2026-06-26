@@ -1,0 +1,129 @@
+{
+  "id": "nanjing_line_2",
+  "name": "Nanjing Metro Line 2",
+  "displayName": "南京地铁2号线",
+  "color": "#C70039",
+  "source": "Public route/station references, manual toilet status pending",
+  "stations": [
+    {
+      "name": "鱼嘴",
+      "toilet": 2
+    },
+    {
+      "name": "天保街",
+      "toilet": 2
+    },
+    {
+      "name": "青莲街",
+      "toilet": 2
+    },
+    {
+      "name": "螺塘路",
+      "toilet": 2
+    },
+    {
+      "name": "油坊桥",
+      "toilet": 2
+    },
+    {
+      "name": "雨润大街",
+      "toilet": 2
+    },
+    {
+      "name": "元通",
+      "toilet": 2
+    },
+    {
+      "name": "奥体东",
+      "toilet": 2
+    },
+    {
+      "name": "兴隆大街",
+      "toilet": 2
+    },
+    {
+      "name": "集庆门大街",
+      "toilet": 2
+    },
+    {
+      "name": "云锦路",
+      "toilet": 2
+    },
+    {
+      "name": "莫愁湖",
+      "toilet": 2
+    },
+    {
+      "name": "汉中门",
+      "toilet": 2
+    },
+    {
+      "name": "上海路",
+      "toilet": 2
+    },
+    {
+      "name": "新街口",
+      "toilet": 2
+    },
+    {
+      "name": "大行宫",
+      "toilet": 2
+    },
+    {
+      "name": "西安门",
+      "toilet": 2
+    },
+    {
+      "name": "明故宫",
+      "toilet": 2
+    },
+    {
+      "name": "苜蓿园",
+      "toilet": 2
+    },
+    {
+      "name": "下马坊",
+      "toilet": 2
+    },
+    {
+      "name": "孝陵卫",
+      "toilet": 2
+    },
+    {
+      "name": "钟灵街",
+      "toilet": 2
+    },
+    {
+      "name": "马群",
+      "toilet": 2
+    },
+    {
+      "name": "金马路",
+      "toilet": 2
+    },
+    {
+      "name": "仙鹤门",
+      "toilet": 2
+    },
+    {
+      "name": "学则路",
+      "toilet": 2
+    },
+    {
+      "name": "仙林中心",
+      "toilet": 2
+    },
+    {
+      "name": "羊山公园",
+      "toilet": 2
+    },
+    {
+      "name": "南大仙林校区",
+      "toilet": 2
+    },
+    {
+      "name": "经天路",
+      "toilet": 2
+    }
+  ]
+}

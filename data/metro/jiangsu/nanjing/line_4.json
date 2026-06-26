@@ -1,0 +1,81 @@
+{
+  "id": "nanjing_line_4",
+  "name": "Nanjing Metro Line 4",
+  "displayName": "南京地铁4号线",
+  "color": "#7A4AA8",
+  "source": "Public route/station references, manual toilet status pending",
+  "stations": [
+    {
+      "name": "龙江",
+      "toilet": 2
+    },
+    {
+      "name": "草场门",
+      "toilet": 2
+    },
+    {
+      "name": "云南路",
+      "toilet": 2
+    },
+    {
+      "name": "鼓楼",
+      "toilet": 2
+    },
+    {
+      "name": "鸡鸣寺",
+      "toilet": 2
+    },
+    {
+      "name": "九华山",
+      "toilet": 2
+    },
+    {
+      "name": "岗子村",
+      "toilet": 2
+    },
+    {
+      "name": "蒋王庙",
+      "toilet": 2
+    },
+    {
+      "name": "王家湾",
+      "toilet": 2
+    },
+    {
+      "name": "聚宝山",
+      "toilet": 2
+    },
+    {
+      "name": "徐庄",
+      "toilet": 2
+    },
+    {
+      "name": "金马路",
+      "toilet": 2
+    },
+    {
+      "name": "汇通路",
+      "toilet": 2
+    },
+    {
+      "name": "灵山",
+      "toilet": 2
+    },
+    {
+      "name": "东流",
+      "toilet": 2
+    },
+    {
+      "name": "孟北",
+      "toilet": 2
+    },
+    {
+      "name": "西岗桦墅",
+      "toilet": 2
+    },
+    {
+      "name": "仙林湖",
+      "toilet": 2
+    }
+  ]
+}
