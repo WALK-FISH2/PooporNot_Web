@@ -1,5 +1,7 @@
 // 本地开发后端。开发者工具可用 127.0.0.1；真机调试请改成电脑的局域网 IP。
-export const API_BASE_URL = "http://127.0.0.1:5173";
+// export const API_BASE_URL = "http://127.0.0.1:5173";
+export const API_BASE_URL = "http://192.168.0.106:5173"
+
 
 // 可选：跨城市调试地铁数据时填写城市名，例如 "无锡"。
 export const DEBUG_METRO_CITY = "";

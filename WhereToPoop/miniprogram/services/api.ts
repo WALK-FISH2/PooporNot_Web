@@ -127,8 +127,11 @@ const toToiletPoi = (poi: RawPoi): ToiletPoi | null => {
 };
 
 const getPoiLocation = (poi: RawPoi): LngLat | null => {
-  const longitude = Number(poi.longitude ?? poi.location?.lng);
-  const latitude = Number(poi.latitude ?? poi.location?.lat);
+  const location = poi.location || {};
+  const rawLongitude = poi.longitude !== undefined && poi.longitude !== null ? poi.longitude : location.lng;
+  const rawLatitude = poi.latitude !== undefined && poi.latitude !== null ? poi.latitude : location.lat;
+  const longitude = Number(rawLongitude);
+  const latitude = Number(rawLatitude);
   if (!Number.isFinite(longitude) || !Number.isFinite(latitude)) return null;
   return { longitude, latitude };
 };
@@ -142,7 +145,7 @@ const apiRequest = <T>(path: string, data: Record<string, string>) =>
       success: (res) => {
         if (res.statusCode < 200 || res.statusCode >= 300) {
           const body = res.data as { error?: string };
-          reject(new Error(body?.error || `请求失败 ${res.statusCode}`));
+          reject(new Error((body && body.error) || `请求失败 ${res.statusCode}`));
           return;
         }
         resolve(res.data as T);

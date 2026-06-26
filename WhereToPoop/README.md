@@ -51,7 +51,7 @@ export const API_BASE_URL = "http://127.0.0.1:5173";
 真机调试时，需要改成电脑局域网 IP，例如：
 
 ```ts
-export const API_BASE_URL = "http://192.168.1.23:5173";
+ = "http://192.168.1.23:5173";
 ```
 
 开发阶段在微信开发者工具勾选：

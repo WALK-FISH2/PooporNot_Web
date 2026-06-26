@@ -211,7 +211,7 @@ const setBasePoint = (position, name, options = {}) => {
   } else {
     baseMarker = new AMapRef.Marker({
       position,
-      content: '<div class="base-marker">基</div>',
+      content: '<div class="base-marker">我</div>',
       offset: new AMapRef.Pixel(-14, -32),
       title: baseName,
       zIndex: 230,

@@ -24,9 +24,9 @@
 
     <cover-view class="tools">
       <cover-view class="tool locate-tool" bindtap="onLocateTap">
-        <cover-image class="locate-icon" src="/assets/icon_location.webp"></cover-image>
+        <cover-image class="locate-icon" src="/assets/icon_location.png"></cover-image>
       </cover-view>
-      <cover-view class="tool" bindtap="onThemeTap">{{darkMode ? '日' : '夜'}}</cover-view>
+      <cover-view class="tool theme-tool" bindtap="onThemeTap">{{darkMode ? '日' : '夜'}}</cover-view>
     </cover-view>
   </view>
 

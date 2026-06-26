@@ -103,6 +103,8 @@ scroll-view {
   background: rgba(255, 255, 255, 0.94);
   font-size: 28rpx;
   font-weight: 800;
+  line-height: 76rpx;
+  text-align: center;
   box-shadow: 0 10rpx 28rpx rgba(21, 31, 25, 0.16);
 }
 
@@ -111,8 +113,17 @@ scroll-view {
 }
 
 .locate-icon {
-  width: 44rpx;
-  height: 54rpx;
+  display: block;
+  width: 42rpx;
+  height: 52rpx;
+}
+
+.theme-tool {
+  display: block;
+  width: 76rpx;
+  height: 76rpx;
+  line-height: 76rpx;
+  text-align: center;
 }
 
 .dark .tool {

@@ -561,7 +561,7 @@ h2 {
 }
 
 .base-marker::after {
-  content: "基";
+  content: "我";
   transform: rotate(45deg);
   font-size: 14px;
 }
