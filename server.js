@@ -316,6 +316,13 @@ async function handleNearbyMetro(reqUrl, res) {
     );
   }
 
+  try {
+    const amapStations = await searchNearbyMetroStationsFromAmap(center, radius);
+    nearbyStations.push(...amapStations);
+  } catch (error) {
+    console.warn("Nearby AMap metro lookup failed", error.message || error);
+  }
+
   const dedupedStations = dedupeMetroStations(nearbyStations);
   dedupedStations.sort((left, right) => left.distance - right.distance);
 
@@ -441,11 +448,64 @@ function normalizeStation(station) {
 function dedupeMetroStations(stations) {
   const seen = new Set();
   return stations.filter((station) => {
-    const key = [station.lineId, station.name, station.longitude, station.latitude].join("|");
+    const key = [normalizeStationName(station.name), Math.round(Number(station.longitude) * 10000), Math.round(Number(station.latitude) * 10000)].join("|");
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
   });
+}
+
+async function searchNearbyMetroStationsFromAmap(center, radius) {
+  const pageSize = 25;
+  const maxPages = 4;
+  const stations = [];
+
+  for (let page = 1; page <= maxPages; page += 1) {
+    if (page > 1) await delay(AMAP_PAGE_DELAY_MS);
+    let data;
+    try {
+      data = await fetchAmap("/v3/place/around", {
+        location: `${center.longitude},${center.latitude}`,
+        keywords: "地铁站",
+        types: "150500",
+        radius: String(radius),
+        sortrule: "distance",
+        offset: String(pageSize),
+        page: String(page),
+        extensions: "base",
+      });
+    } catch (error) {
+      if (stations.length > 0 && isAmapRateLimit(error)) break;
+      throw error;
+    }
+
+    const pois = Array.isArray(data.pois) ? data.pois : [];
+    pois.forEach((poi) => {
+      if (!poi.name || !poi.location) return;
+      const [lng, lat] = splitLngLat(poi.location);
+      if (!isLngLat(lng, lat)) return;
+      const longitude = Number(lng);
+      const latitude = Number(lat);
+      const distance = Number(poi.distance);
+      stations.push({
+        name: normalizeAmapStationDisplayName(poi.name),
+        toilet: 2,
+        longitude,
+        latitude,
+        lineId: "amap_nearby_metro",
+        lineName: "附近地铁站",
+        lineColor: "#9aa3a0",
+        city: normalizeAmapName(poi.cityname || ""),
+        province: normalizeAmapName(poi.pname || ""),
+        distance: Number.isFinite(distance) ? distance : getDistanceMeters(center, { longitude, latitude }),
+        source: "amap",
+      });
+    });
+
+    if (pois.length < pageSize) break;
+  }
+
+  return stations;
 }
 
 function hydrateMetroLines(lines, stationIndex) {
@@ -611,6 +671,15 @@ function normalizeStationName(value) {
     .replace(/[（(]地铁站[）)]/gu, "")
     .replace(/地铁站/u, "")
     .replace(/站/u, "");
+}
+
+
+function normalizeAmapStationDisplayName(value) {
+  return normalizeText(value)
+    .replace(/\s+/g, "")
+    .replace(/[（(]地铁站[）)]/gu, "")
+    .replace(/地铁站$/u, "")
+    .replace(/站$/u, "");
 }
 
 function slugifyCn(value) {
