@@ -5,6 +5,7 @@ import {
   LngLat,
   MetroStation,
   PlacePoi,
+  reverseLocation,
   searchNearbyToilets,
   searchPlaces,
   ToiletPoi,
@@ -90,9 +91,9 @@ Component({
     metroStations: [] as MetroStationView[],
     panelMode: "empty" as PanelMode,
     statusText: "启动中",
-    cityKeyword: "无锡",
+    cityKeyword: "",
     placeKeyword: "",
-    baseName: "无锡",
+    baseName: "",
     radius: 500,
     resultTitle: "等待选择",
     resultCount: "0",
@@ -126,9 +127,11 @@ Component({
       this.setData({ radiusText: this.formatDistance(this.data.radius) });
       try {
         const location = await getCurrentLocation();
+        const city = await this.resolveCityByLocation(location);
         this.setData({
           userLocation: location,
           baseLocation: location,
+          cityKeyword: city,
           baseName: "\u5f53\u524d\u4f4d\u7f6e",
           latitude: location.latitude,
           longitude: location.longitude,
@@ -137,11 +140,17 @@ Component({
           resultTitle: "\u5f53\u524d\u4f4d\u7f6e",
           resultCount: "0",
         });
-        await this.loadMetro(location);
+        await this.loadMetro(location, city);
         await this.searchToilets(location);
       } catch (error) {
         console.warn("location unavailable", error);
-        await this.useCity(true);
+        this.setData({
+          cityPanelVisible: true,
+          statusText: "请选择城市",
+          panelMode: "empty",
+          resultTitle: "请选择城市",
+          resultCount: "0",
+        });
       }
     },
 
@@ -235,6 +244,16 @@ Component({
       }
     },
 
+    async resolveCityByLocation(location: LngLat) {
+      try {
+        const result = await reverseLocation(location);
+        return result.city || "";
+      } catch (error) {
+        console.warn("city reverse geocode failed", error);
+        return "";
+      }
+    },
+
     async loadMetro(location?: LngLat, city?: string) {
       try {
         const center = location || this.data.baseLocation || this.getCurrentCenter();
@@ -301,16 +320,18 @@ Component({
       try {
         this.setData({ statusText: "定位中" });
         const location = await getCurrentLocation();
+        const city = await this.resolveCityByLocation(location);
         this.setData({
           userLocation: location,
           baseLocation: location,
+          cityKeyword: city,
           baseName: "当前位置",
           latitude: location.latitude,
           longitude: location.longitude,
           scale: 15,
           statusText: "已定位",
         });
-        await this.loadMetro(location);
+        await this.loadMetro(location, city);
         await this.searchToilets(location);
       } catch (error) {
         this.showError(error);

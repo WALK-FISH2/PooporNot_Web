@@ -45,6 +45,13 @@ export interface MetroResult {
   stations: MetroStation[];
 }
 
+export interface ReverseLocationResult {
+  province: string;
+  city: string;
+  provinceSlug: string;
+  citySlug: string;
+}
+
 interface RawLocation {
   lng?: number;
   lat?: number;
@@ -77,6 +84,12 @@ export const searchPlaces = (city: string, keywords: string, mode = "") =>
     mode,
     limit: "10",
   }).then((res) => res.places.map(toPlacePoi).filter(Boolean) as PlacePoi[]);
+
+export const reverseLocation = (location: LngLat) =>
+  apiRequest<ReverseLocationResult>("/api/location/reverse", {
+    lng: String(location.longitude),
+    lat: String(location.latitude),
+  });
 
 export const searchNearbyToilets = (location: LngLat, radius: number) =>
   apiRequest<{ pois: RawPoi[] }>("/api/toilets", {

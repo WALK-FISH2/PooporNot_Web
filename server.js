@@ -23,6 +23,8 @@ const CITY_SLUG_ALIASES = {
   南京: "nanjing",
 };
 
+const MUNICIPALITIES = new Set(["北京", "上海", "天津", "重庆"]);
+
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
@@ -56,6 +58,10 @@ const server = http.createServer(async (req, res) => {
       });
     }
 
+    if (reqUrl.pathname === "/api/location/reverse") {
+      return await handleReverseLocation(reqUrl, res);
+    }
+
     if (reqUrl.pathname === "/api/places") {
       return await handlePlaceSearch(reqUrl, res);
     }
@@ -82,6 +88,19 @@ const server = http.createServer(async (req, res) => {
 server.listen(PORT, () => {
   console.log(`拉了么统一后端已启动: http://localhost:${PORT}`);
 });
+
+async function handleReverseLocation(reqUrl, res) {
+  requireAmapKey();
+
+  const lng = reqUrl.searchParams.get("lng");
+  const lat = reqUrl.searchParams.get("lat");
+  if (!isLngLat(lng, lat)) {
+    return sendJson(res, { error: "当前基准点坐标无效" }, 400);
+  }
+
+  const location = await reverseGeocode(lng, lat);
+  return sendJson(res, location);
+}
 
 async function handlePlaceSearch(reqUrl, res) {
   requireAmapKey();
@@ -312,7 +331,9 @@ async function reverseGeocode(lng, lat) {
   });
   const component = data.regeocode?.addressComponent || {};
   const provinceName = normalizeAmapName(component.province);
-  const cityName = normalizeAmapName(Array.isArray(component.city) ? "" : component.city || component.district);
+  const rawCity = Array.isArray(component.city) ? "" : component.city;
+  const fallbackCity = MUNICIPALITIES.has(provinceName) ? provinceName : component.district;
+  const cityName = normalizeAmapName(rawCity || fallbackCity);
 
   return {
     province: provinceName,
