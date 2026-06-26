@@ -66,6 +66,9 @@ interface ToiletView extends ToiletPoi {
 
 interface MetroStationView extends MetroStation {
   toiletText: string;
+  statusClass: string;
+  distance: number;
+  distanceText: string;
 }
 
 const TOILET_MARKER_BASE = 10000;
@@ -339,11 +342,14 @@ Component({
     },
 
     onShowMetroTap() {
+      const metroStations = this.getNearestMetroStations(10);
       this.setData({
-        panelMode: this.data.metroStations.length ? "metro" : "empty",
-        resultTitle: this.data.metroStations.length ? "地铁站厕所" : this.data.metroMessage,
-        resultCount: String(this.data.metroStations.length),
+        metroStations,
+        panelMode: metroStations.length ? "metro" : "empty",
+        resultTitle: metroStations.length ? "最近地铁站" : this.data.metroMessage,
+        resultCount: String(metroStations.length),
       });
+      this.refreshMarkers();
     },
 
     onMarkerTap(event: any) {
@@ -391,10 +397,47 @@ Component({
       this.onRouteTap();
     },
 
+    onToiletNavigateTap(event: any) {
+      const index = Number(event.currentTarget.dataset.index);
+      const toilet = this.data.toilets[index];
+      if (!toilet) return;
+      this.selectToilet(toilet);
+      this.openLocation({
+        type: "toilet",
+        title: toilet.name,
+        subtitle: toilet.address || "暂无地址",
+        meta: this.formatDistance(toilet.distance),
+        location: this.toLocation(toilet),
+      });
+    },
+
     onMetroTap(event: any) {
       const index = Number(event.currentTarget.dataset.index);
       const station = this.data.metroStations[index];
       if (station) this.selectMetroStation(station);
+    },
+
+    onMetroRouteTap(event: any) {
+      const index = Number(event.currentTarget.dataset.index);
+      const station = this.data.metroStations[index];
+      if (!station) return;
+      this.selectMetroStation(station);
+      this.onRouteTap();
+    },
+
+    onMetroNavigateTap(event: any) {
+      const index = Number(event.currentTarget.dataset.index);
+      const station = this.data.metroStations[index];
+      if (!station) return;
+      this.selectMetroStation(station);
+      this.openLocation({
+        type: "metro",
+        title: station.name,
+        subtitle: station.lineName,
+        meta: this.getToiletText(station.toilet),
+        location: this.toLocation(station),
+        toiletText: this.getToiletText(station.toilet),
+      });
     },
 
     selectPlace(place: PlacePoi) {
@@ -487,6 +530,23 @@ Component({
       }
     },
 
+    onNavigateTap() {
+      const detail = this.data.detail;
+      if (!detail || detail.type === "place") return;
+      this.openLocation(detail);
+    },
+
+    openLocation(detail: DetailInfo) {
+      wx.openLocation({
+        latitude: detail.location.latitude,
+        longitude: detail.location.longitude,
+        scale: 18,
+        name: detail.title,
+        address: detail.subtitle,
+        fail: (error) => this.showError(new Error(error.errMsg || "打开地图失败")),
+      });
+    },
+
     onBackTap() {
       this.setData({
         polyline: [],
@@ -521,7 +581,34 @@ Component({
     },
 
     toMetroViews(stations: MetroStation[]): MetroStationView[] {
-      return stations.map((station) => ({ ...station, toiletText: this.getToiletText(station.toilet) }));
+      const origin = this.data.baseLocation || this.data.userLocation || this.getCurrentCenter();
+      return stations.map((station) => {
+        const distance = this.getDistance(origin, this.toLocation(station));
+        return {
+          ...station,
+          distance,
+          distanceText: this.formatDistance(distance),
+          toiletText: this.getToiletText(station.toilet),
+          statusClass: this.getMetroDotClass(station.toilet),
+        };
+      });
+    },
+
+    getNearestMetroStations(limit = 10): MetroStationView[] {
+      const origin = this.data.baseLocation || this.data.userLocation || this.getCurrentCenter();
+      return this.data.metroStations
+        .map((station) => {
+          const distance = this.getDistance(origin, this.toLocation(station));
+          return {
+            ...station,
+            distance,
+            distanceText: this.formatDistance(distance),
+            toiletText: this.getToiletText(station.toilet),
+            statusClass: this.getMetroDotClass(station.toilet),
+          };
+        })
+        .sort((left, right) => left.distance - right.distance)
+        .slice(0, limit);
     },
 
     buildMarkers(places: PlacePoi[], toilets: ToiletPoi[], metroStations: MetroStation[], baseLocation: LngLat | null): MapMarker[] {
@@ -598,6 +685,12 @@ Component({
       return "/assets/metro_gray.png";
     },
 
+    getMetroDotClass(status: 0 | 1 | 2) {
+      if (status === 1) return "metro-dot-green";
+      if (status === 0) return "metro-dot-red";
+      return "metro-dot-gray";
+    },
+
     getToiletText(status: 0 | 1 | 2) {
       if (status === 1) return "有厕所";
       if (status === 0) return "无厕所";
@@ -613,6 +706,19 @@ Component({
     formatDistance(distance: number) {
       if (distance >= 1000) return `${(distance / 1000).toFixed(1)} km`;
       return `${Math.round(distance)} m`;
+    },
+
+    getDistance(from: LngLat, to: LngLat) {
+      const rad = Math.PI / 180;
+      const earthRadius = 6371000;
+      const lat1 = from.latitude * rad;
+      const lat2 = to.latitude * rad;
+      const deltaLat = (to.latitude - from.latitude) * rad;
+      const deltaLng = (to.longitude - from.longitude) * rad;
+      const a =
+        Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+        Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLng / 2) * Math.sin(deltaLng / 2);
+      return earthRadius * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     },
 
     formatDuration(duration: number) {

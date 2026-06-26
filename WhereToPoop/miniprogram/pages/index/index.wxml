@@ -26,6 +26,7 @@
       <cover-view class="tool locate-tool" bindtap="onLocateTap">
         <cover-image class="locate-icon" src="/assets/icon_location.png"></cover-image>
       </cover-view>
+      <cover-view class="tool metro-tool" bindtap="onShowMetroTap">铁</cover-view>
       <cover-view class="tool theme-tool" bindtap="onThemeTap">{{darkMode ? '日' : '夜'}}</cover-view>
     </cover-view>
   </view>
@@ -75,18 +76,27 @@
             <text class="card-sub">{{item.address || '暂无地址'}}</text>
             <text class="card-meta">{{item.distanceText}}</text>
           </view>
-          <view class="route-chip" data-index="{{index}}" catchtap="onToiletRouteTap">路线</view>
+          <view class="card-actions">
+            <view class="route-chip small" data-index="{{index}}" catchtap="onToiletRouteTap">路线</view>
+            <view class="route-chip small nav" data-index="{{index}}" catchtap="onToiletNavigateTap">导航</view>
+          </view>
         </view>
       </block>
 
       <block wx:elif="{{panelMode === 'metro'}}">
-        <view wx:for="{{metroStations}}" wx:key="name" class="card" data-index="{{index}}" bindtap="onMetroTap">
+        <view wx:for="{{metroStations}}" wx:key="name" class="card metro-card" data-index="{{index}}" bindtap="onMetroTap">
           <view class="card-main">
             <text class="card-title">{{item.name}}</text>
             <text class="card-sub">{{item.lineName}}</text>
-            <text class="card-meta">{{item.toiletText}}</text>
+            <text class="card-meta">{{item.toiletText}} · {{item.distanceText}}</text>
           </view>
-          <view class="metro-dot"></view>
+          <view class="metro-actions">
+            <view class="metro-dot {{item.statusClass}}"></view>
+            <view class="card-actions">
+              <view class="route-chip small" data-index="{{index}}" catchtap="onMetroRouteTap">路线</view>
+              <view class="route-chip small nav" data-index="{{index}}" catchtap="onMetroNavigateTap">导航</view>
+            </view>
+          </view>
         </view>
       </block>
 
@@ -95,7 +105,13 @@
           <text class="card-title">{{detail.title}}</text>
           <text class="card-sub">{{detail.subtitle}}</text>
           <text class="card-meta">{{detail.toiletText || detail.meta}}</text>
-          <button class="primary" bindtap="onRouteTap">{{detail.type === 'place' ? '查找周围厕所' : '路线'}}</button>
+          <block wx:if="{{detail.type === 'place'}}">
+            <button class="primary" bindtap="onRouteTap">查找周围厕所</button>
+          </block>
+          <view wx:else class="detail-actions">
+            <button class="primary" bindtap="onRouteTap">路线</button>
+            <button class="primary nav-primary" bindtap="onNavigateTap">导航</button>
+          </view>
         </view>
       </block>
 

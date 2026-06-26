@@ -231,10 +231,17 @@ async function handleNearbyMetro(reqUrl, res) {
     return sendJson(res, { error: "当前基准点坐标无效" }, 400);
   }
 
-  const location = await reverseGeocode(lng, lat);
+  let location;
+  try {
+    location = await reverseGeocode(lng, lat);
+  } catch (error) {
+    console.warn("Metro reverse geocode failed", error.message || error);
+    location = { province: "", city: "", provinceSlug: "", citySlug: "" };
+  }
+
   const city = debugCity || location.city;
   const lines = readMetroLinesByCity(city);
-  if (!lines.length) {
+  if (!city || !lines.length) {
     return sendJson(res, {
       city,
       hasMetro: false,
@@ -244,7 +251,19 @@ async function handleNearbyMetro(reqUrl, res) {
     });
   }
 
-  const stationIndex = await getCityMetroStationIndex(city);
+  let stationIndex;
+  try {
+    stationIndex = await getCityMetroStationIndex(city);
+  } catch (error) {
+    console.warn("Metro station lookup failed", city, error.message || error);
+    return sendJson(res, {
+      city,
+      hasMetro: false,
+      location,
+      lines: [],
+      stations: [],
+    });
+  }
   const hydratedLines = hydrateMetroLines(lines, stationIndex);
   const stations = flattenMetroStations(hydratedLines);
 

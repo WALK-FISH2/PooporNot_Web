@@ -118,7 +118,8 @@ scroll-view {
   height: 52rpx;
 }
 
-.theme-tool {
+.theme-tool,
+.metro-tool {
   display: block;
   width: 76rpx;
   height: 76rpx;
@@ -336,7 +337,7 @@ picker {
 
 .card {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 94rpx;
+  grid-template-columns: minmax(0, 1fr) 104rpx;
   gap: 14rpx;
   align-items: stretch;
   margin-bottom: 12rpx;
@@ -344,6 +345,10 @@ picker {
   border: 1rpx solid rgba(24, 32, 27, 0.12);
   border-radius: 12rpx;
   background: #fff;
+}
+
+.metro-card {
+  grid-template-columns: minmax(0, 1fr) 142rpx;
 }
 
 .dark .card,
@@ -397,6 +402,35 @@ picker {
   font-weight: 800;
 }
 
+.card-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8rpx;
+}
+
+.metro-actions {
+  display: grid;
+  grid-template-columns: 28rpx 92rpx;
+  gap: 18rpx;
+  align-items: center;
+}
+
+.route-chip.small {
+  min-height: 54rpx;
+  font-size: 22rpx;
+}
+
+.route-chip.nav,
+.nav-primary {
+  background: #18a058;
+}
+
+.detail-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12rpx;
+}
+
 .metro-dot {
   align-self: center;
   justify-self: center;
@@ -404,8 +438,25 @@ picker {
   height: 28rpx;
   border: 6rpx solid #fff;
   border-radius: 50%;
+}
+
+.metro-dot-green {
   background: #18a058;
   box-shadow: 0 0 0 4rpx rgba(24, 160, 88, 0.2);
+}
+
+.metro-dot-red {
+  background: #d94841;
+  box-shadow: 0 0 0 4rpx rgba(217, 72, 65, 0.18);
+}
+
+.metro-dot-gray {
+  background: #9aa3a0;
+  box-shadow: 0 0 0 4rpx rgba(154, 163, 160, 0.18);
+}
+
+.dark .metro-dot {
+  border-color: #1a211d;
 }
 
 .detail-card {
