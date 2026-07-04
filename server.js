@@ -8,7 +8,7 @@ const metroDataDir = path.join(rootDir, "data", "metro");
 const metroCityIndexPath = path.join(metroDataDir, "city_index.json");
 loadEnv(path.join(rootDir, ".env"));
 
-const PORT = Number(process.env.PORT || 5173);
+const PORT = Number(process.env.PORT || 5174);
 const AMAP_JS_KEY = process.env.AMAP_JS_KEY || "";
 const AMAP_SECURITY_JS_CODE = process.env.AMAP_SECURITY_JS_CODE || "";
 const AMAP_WEB_SERVICE_KEY = process.env.AMAP_WEB_SERVICE_KEY || process.env.AMAP_KEY || "";

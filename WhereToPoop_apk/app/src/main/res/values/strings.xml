@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">拉了么</string>
+    <string name="nearby_toilets">附近厕所</string>
+    <string name="locating">定位中</string>
+    <string name="location_permission_reason">用于查找你附近的公共厕所和地铁站厕所信息。</string>
+    <string name="select_city">选择城市</string>
+    <string name="place_hint">小区、商场、地铁站或地址</string>
+    <string name="search_place">搜地点</string>
+    <string name="search_toilet">查厕所</string>
+    <string name="route">路线</string>
+    <string name="navigate">导航</string>
+    <string name="select">选定</string>
+    <string name="no_results">暂无结果</string>
+    <string name="results">结果</string>
+    <string name="recommended_cities">推荐城市</string>
+    <string name="city_initial">城市开头字母</string>
+</resources>
+

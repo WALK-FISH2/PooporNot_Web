@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="green_primary">#18A058</color>
+    <color name="blue_action">#2374AB</color>
+    <color name="red_status">#D94841</color>
+    <color name="gray_status">#9AA3A0</color>
+    <color name="page_background">#EEF2EF</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="surface_muted">#EDF1EE</color>
+    <color name="text_primary">#17211B</color>
+    <color name="text_secondary">#68736C</color>
+    <color name="divider">#1F18201B</color>
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+</resources>
+

@@ -1,0 +1,5 @@
+# Copy this file to local.properties and adjust the values.
+sdk.dir=C\:\\Users\\your-name\\AppData\\Local\\Android\\Sdk
+API_BASE_URL=http\://10.0.2.2\:5173/
+AMAP_ANDROID_KEY=replace-with-your-amap-android-key
+

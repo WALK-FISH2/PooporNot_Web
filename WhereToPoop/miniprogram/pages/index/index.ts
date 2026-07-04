@@ -703,13 +703,13 @@ Component({
     getMetroIcon(status: 0 | 1 | 2) {
       if (status === 1) return "/assets/metro_green.png";
       if (status === 0) return "/assets/metro_red.png";
-      return "/assets/metro_gray.png";
+      return "/assets/metro_orange.png";
     },
 
     getMetroDotClass(status: 0 | 1 | 2) {
       if (status === 1) return "metro-dot-green";
       if (status === 0) return "metro-dot-red";
-      return "metro-dot-gray";
+      return "metro-dot-orange";
     },
 
     getToiletText(status: 0 | 1 | 2) {

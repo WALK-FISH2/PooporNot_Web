@@ -450,9 +450,9 @@ picker {
   box-shadow: 0 0 0 4rpx rgba(217, 72, 65, 0.18);
 }
 
-.metro-dot-gray {
-  background: #9aa3a0;
-  box-shadow: 0 0 0 4rpx rgba(154, 163, 160, 0.18);
+.metro-dot-orange {
+  background: #f59e0b;
+  box-shadow: 0 0 0 4rpx rgba(245, 158, 11, 0.18);
 }
 
 .dark .metro-dot {
