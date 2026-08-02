@@ -526,7 +526,7 @@ class MainActivity : AppCompatActivity(), AMap.OnMarkerClickListener {
                 iconResource = when (station.toilet) {
                     1 -> R.drawable.metro_green
                     0 -> R.drawable.metro_red
-                    else -> R.drawable.metro_gray
+                    else -> R.drawable.metro_orange
                 },
                 anchorY = 0.5f,
             )

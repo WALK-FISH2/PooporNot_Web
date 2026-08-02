@@ -23,12 +23,6 @@ export interface ToiletPoi {
   latitude: number;
 }
 
-export interface RouteResult {
-  distance: number;
-  duration: number;
-  points: LngLat[];
-}
-
 export interface MetroStation {
   name: string;
   toilet: 0 | 1 | 2;
@@ -99,12 +93,6 @@ export const searchNearbyToilets = (location: LngLat, radius: number) =>
     keywords: "公共厕所",
     limit: "100",
   }).then((res) => res.pois.map(toToiletPoi).filter(Boolean) as ToiletPoi[]);
-
-export const getWalkingRoute = (origin: LngLat, destination: LngLat) =>
-  apiRequest<RouteResult>("/api/navigation", {
-    origin: `${origin.longitude},${origin.latitude}`,
-    destination: `${destination.longitude},${destination.latitude}`,
-  });
 
 export const loadMetroForLocation = (location: LngLat, city = "") =>
   apiRequest<MetroResult>("/api/metro/nearby", {

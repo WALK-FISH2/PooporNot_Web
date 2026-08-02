@@ -49,7 +49,7 @@ class ResultAdapter(
                 when (item.toiletStatus) {
                     1 -> R.drawable.bg_dot_green
                     0 -> R.drawable.bg_dot_red
-                    else -> R.drawable.bg_dot_gray
+                    else -> R.drawable.bg_dot_orange
                 },
             )
 

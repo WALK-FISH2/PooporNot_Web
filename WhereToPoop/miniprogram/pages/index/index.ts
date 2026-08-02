@@ -1,6 +1,5 @@
 import {
   getCurrentLocation,
-  getWalkingRoute,
   loadMetroForLocation,
   LngLat,
   MetroStation,
@@ -13,7 +12,7 @@ import {
 import { TENCENT_MAP_STYLE_DARK, TENCENT_MAP_STYLE_LIGHT, TENCENT_MAP_SUBKEY } from "../../config/api";
 import { CITY_GROUPS, RECOMMENDED_CITIES } from "../../data/cities";
 
-type PanelMode = "places" | "toilets" | "metro" | "detail" | "route" | "empty";
+type PanelMode = "places" | "toilets" | "metro" | "detail" | "empty";
 type DetailType = "place" | "toilet" | "metro";
 
 interface MarkerLabel {
@@ -38,14 +37,6 @@ interface MapMarker {
   title?: string;
   zIndex?: number;
   label?: MarkerLabel;
-}
-
-interface MapPolyline {
-  points: LngLat[];
-  color: string;
-  width: number;
-  dottedLine?: boolean;
-  arrowLine?: boolean;
 }
 
 interface DetailInfo {
@@ -85,7 +76,6 @@ Component({
     mapSubkey: TENCENT_MAP_SUBKEY,
     mapLayerStyle: TENCENT_MAP_STYLE_LIGHT,
     markers: [] as MapMarker[],
-    polyline: [] as MapPolyline[],
     places: [] as PlaceView[],
     toilets: [] as ToiletView[],
     metroStations: [] as MetroStationView[],
@@ -98,7 +88,6 @@ Component({
     resultTitle: "等待选择",
     resultCount: "0",
     detail: null as DetailInfo | null,
-    routeSummary: "",
     darkMode: false,
     radiusText: "500 m",
     userLocation: null as LngLat | null,
@@ -176,7 +165,6 @@ Component({
           baseName: city,
           places: [],
           toilets: [],
-          polyline: [],
           panelMode: "empty",
           resultTitle: `${city} 地图`,
           resultCount: "0",
@@ -204,7 +192,7 @@ Component({
       }
 
       try {
-        this.setData({ statusText: "找地点", polyline: [], toilets: [] });
+        this.setData({ statusText: "找地点", toilets: [] });
         const places = this.toPlaceViews(await searchPlaces(city, keywords));
         this.setData({
           places,
@@ -228,7 +216,7 @@ Component({
       }
 
       try {
-        this.setData({ statusText: "搜索厕所", polyline: [], places: [] });
+        this.setData({ statusText: "搜索厕所", places: [] });
         const toilets = this.toToiletViews(await searchNearbyToilets(center, this.data.radius));
         this.setData({
           toilets,
@@ -410,14 +398,6 @@ Component({
       if (toilet) this.selectToilet(toilet);
     },
 
-    onToiletRouteTap(event: any) {
-      const index = Number(event.currentTarget.dataset.index);
-      const toilet = this.data.toilets[index];
-      if (!toilet) return;
-      this.selectToilet(toilet);
-      this.onRouteTap();
-    },
-
     onToiletNavigateTap(event: any) {
       const index = Number(event.currentTarget.dataset.index);
       const toilet = this.data.toilets[index];
@@ -436,14 +416,6 @@ Component({
       const index = Number(event.currentTarget.dataset.index);
       const station = this.data.metroStations[index];
       if (station) this.selectMetroStation(station);
-    },
-
-    onMetroRouteTap(event: any) {
-      const index = Number(event.currentTarget.dataset.index);
-      const station = this.data.metroStations[index];
-      if (!station) return;
-      this.selectMetroStation(station);
-      this.onRouteTap();
     },
 
     onMetroNavigateTap(event: any) {
@@ -521,36 +493,6 @@ Component({
       });
     },
 
-    async onRouteTap() {
-      const detail = this.data.detail;
-      if (!detail || detail.type === "place") {
-        this.searchToilets();
-        return;
-      }
-      const origin = this.data.baseLocation || this.data.userLocation;
-      if (!origin) return;
-
-      try {
-        const route = await getWalkingRoute(origin, detail.location);
-        this.setData({
-          polyline: [
-            {
-              points: route.points,
-              color: "#2374abdd",
-              width: 7,
-              arrowLine: true,
-            },
-          ],
-          panelMode: "route",
-          routeSummary: `${this.formatDistance(route.distance)} · ${this.formatDuration(route.duration)}`,
-          resultTitle: detail.title,
-          resultCount: this.formatDuration(route.duration),
-        });
-      } catch (error) {
-        this.showError(error);
-      }
-    },
-
     onNavigateTap() {
       const detail = this.data.detail;
       if (!detail || detail.type === "place") return;
@@ -565,15 +507,6 @@ Component({
         name: detail.title,
         address: detail.subtitle,
         fail: (error) => this.showError(new Error(error.errMsg || "打开地图失败")),
-      });
-    },
-
-    onBackTap() {
-      this.setData({
-        polyline: [],
-        panelMode: this.data.toilets.length ? "toilets" : "empty",
-        resultTitle: `${this.data.baseName} · ${this.formatDistance(this.data.radius)} 内`,
-        resultCount: String(this.data.toilets.length),
       });
     },
 
@@ -740,10 +673,6 @@ Component({
         Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
         Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLng / 2) * Math.sin(deltaLng / 2);
       return earthRadius * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    },
-
-    formatDuration(duration: number) {
-      return `${Math.max(1, Math.round(duration / 60))} 分钟`;
     },
 
     showError(error: unknown) {

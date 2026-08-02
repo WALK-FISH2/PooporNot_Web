@@ -389,7 +389,7 @@ picker {
   color: #a7b2ac;
 }
 
-.route-chip {
+.action-chip {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -415,19 +415,19 @@ picker {
   align-items: center;
 }
 
-.route-chip.small {
+.action-chip.small {
   min-height: 54rpx;
   font-size: 22rpx;
 }
 
-.route-chip.nav,
+.action-chip.nav,
 .nav-primary {
   background: #18a058;
 }
 
 .detail-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 12rpx;
 }
 

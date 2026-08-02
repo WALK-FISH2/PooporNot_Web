@@ -8,7 +8,6 @@
       scale="{{scale}}"
       show-location
       markers="{{markers}}"
-      polyline="{{polyline}}"
       subkey="{{mapSubkey}}"
       layer-style="{{mapLayerStyle}}"
       bindmarkertap="onMarkerTap"
@@ -65,7 +64,7 @@
             <text class="card-sub">{{item.address || '暂无地址'}}</text>
             <text class="card-meta">{{item.metaText}}</text>
           </view>
-          <view class="route-chip" data-index="{{index}}" catchtap="onPlaceUseTap">选定</view>
+          <view class="action-chip" data-index="{{index}}" catchtap="onPlaceUseTap">选定</view>
         </view>
       </block>
 
@@ -77,8 +76,7 @@
             <text class="card-meta">{{item.distanceText}}</text>
           </view>
           <view class="card-actions">
-            <view class="route-chip small" data-index="{{index}}" catchtap="onToiletRouteTap">路线</view>
-            <view class="route-chip small nav" data-index="{{index}}" catchtap="onToiletNavigateTap">导航</view>
+            <view class="action-chip small nav" data-index="{{index}}" catchtap="onToiletNavigateTap">导航</view>
           </view>
         </view>
       </block>
@@ -93,8 +91,7 @@
           <view class="metro-actions">
             <view class="metro-dot {{item.statusClass}}"></view>
             <view class="card-actions">
-              <view class="route-chip small" data-index="{{index}}" catchtap="onMetroRouteTap">路线</view>
-              <view class="route-chip small nav" data-index="{{index}}" catchtap="onMetroNavigateTap">导航</view>
+              <view class="action-chip small nav" data-index="{{index}}" catchtap="onMetroNavigateTap">导航</view>
             </view>
           </view>
         </view>
@@ -106,20 +103,11 @@
           <text class="card-sub">{{detail.subtitle}}</text>
           <text class="card-meta">{{detail.toiletText || detail.meta}}</text>
           <block wx:if="{{detail.type === 'place'}}">
-            <button class="primary" bindtap="onRouteTap">查找周围厕所</button>
+            <button class="primary" bindtap="onSearchTap">查找周围厕所</button>
           </block>
           <view wx:else class="detail-actions">
-            <button class="primary" bindtap="onRouteTap">路线</button>
             <button class="primary nav-primary" bindtap="onNavigateTap">导航</button>
           </view>
-        </view>
-      </block>
-
-      <block wx:elif="{{panelMode === 'route'}}">
-        <view class="detail-card">
-          <text class="card-title">{{resultTitle}}</text>
-          <text class="card-sub">{{routeSummary}}</text>
-          <button class="primary secondary" bindtap="onBackTap">返回结果</button>
         </view>
       </block>
 
