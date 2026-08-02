@@ -20,7 +20,7 @@ fun localValue(name: String, fallback: String): String {
 
 fun quoted(value: String): String = "\"${value.replace("\\", "\\\\").replace("\"", "\\\"")}\""
 
-val apiBaseUrl = localValue("API_BASE_URL", "http://10.0.2.2:5173/")
+val apiBaseUrl = localValue("API_BASE_URL", "http://124.220.73.65:5174/")
 val amapAndroidKey = localValue("AMAP_ANDROID_KEY", "")
 
 android {

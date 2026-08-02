@@ -618,7 +618,7 @@ class MainActivity : AppCompatActivity(), AMap.OnMarkerClickListener {
         if (points.isEmpty()) return
         routePolyline = map.addPolyline(
             PolylineOptions()
-                .addAll(points.map(LngLat::toLatLng))
+                .addAll(points.map { it.toLatLng() })
                 .color(Color.argb(230, 35, 116, 171))
                 .width(14f)
                 .zIndex(80f),

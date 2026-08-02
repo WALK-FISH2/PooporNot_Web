@@ -14,9 +14,13 @@
 
 ## 开发环境
 
-- Android Studio（JDK 17）
-- Android SDK 35
-- Node 后端：`D:\Work\Poopornot\03_SourceCode\server.js`
+- Android Studio
+- Android SDK Platform 35
+- Android SDK Build-Tools
+- Android SDK Platform-Tools
+- Android Emulator（可选，使用真机测试时不必安装模拟器）
+
+Android Studio 自带运行 Gradle 所需的 JDK，无需单独安装 Java。
 
 ## 配置
 
@@ -31,11 +35,7 @@ AMAP_ANDROID_KEY=你的高德AndroidKey
 4. 设置后端地址：
 
 ```properties
-# Android 模拟器访问电脑
-API_BASE_URL=http\://10.0.2.2\:5173/
-
-# 真机访问电脑时改为电脑局域网 IP
-# API_BASE_URL=http\://192.168.0.106\:5173/
+API_BASE_URL=http\://124.220.73.65\:5174/
 ```
 
 Android Key 的包名是：
@@ -48,19 +48,14 @@ com.poopornot.wheretopoop
 
 ## 后端
 
-客户端沿用原项目的统一 API。先在 `03_SourceCode/.env` 配置：
+客户端默认连接：
 
-```env
-AMAP_WEB_SERVICE_KEY=你的高德Web服务Key
-PORT=5173
+```text
+http://124.220.73.65:5174/
 ```
 
-然后启动：
-
-```powershell
-cd D:\Work\Poopornot\03_SourceCode
-npm start
-```
+健康检查地址为 `http://124.220.73.65:5174/api/health`。服务端仍需配置
+`AMAP_WEB_SERVICE_KEY`，该密钥不要写入 Android 客户端。
 
 ## 构建
 
