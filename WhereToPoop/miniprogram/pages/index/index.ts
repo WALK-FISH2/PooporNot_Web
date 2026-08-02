@@ -105,12 +105,33 @@ Component({
 
   lifetimes: {
     attached() {
+      wx.showShareMenu({
+        menus: ["shareAppMessage", "shareTimeline"],
+        fail: (error) => {
+          console.warn("show share menu failed", error);
+        },
+      }); //增加分享功能 share
       this.bootstrap();
     },
   },
 
   methods: {
     noop() {},
+    // 转发给微信好友或群聊
+    onShareAppMessage() {
+      return {
+        title: "拉了么｜快速查找附近厕所",
+        path: "/pages/index/index",
+      };
+    },
+
+    // 分享到朋友圈
+    onShareTimeline() {
+      return {
+        title: "拉了么｜快速查找附近厕所",
+        query: "",
+      };
+    },    
 
     async bootstrap() {
       this.setData({ radiusText: this.formatDistance(this.data.radius) });
