@@ -6,7 +6,7 @@
 
 ## 当前记录
 
-- 暂无正式 ADR。
+- `0001-global-poi-and-coordinate-strategy.md`：状态 `Accepted`。确定微信小程序全球 POI 数据源、GCJ-02/WGS84 坐标策略、查询中心、两步查厕所、按按钮查询地铁及 marker 图层规则。
 
 ## 待补决策
 
