@@ -1,32 +1,23 @@
-# Metro toilet data
+# 地铁厕所数据
 
-地铁厕所数据统一维护在这个目录下，网页端和小程序端都通过后端接口读取这里的数据。
+状态：Active
 
-## 目录结构
+本目录是网页、微信小程序和 Android 共用的地铁厕所状态数据源。完整 schema、当前盘点、坐标匹配和维护流程见 `docs/metro-data.md`。
+
+## 目录
 
 ```text
 data/metro/
   city_index.json
-  jiangsu/
-    wuxi/
+  <provinceSlug>/
+    <citySlug>/
       line_1.json
-      line_2.json
+      line_s1.json
 ```
 
-`city_index.json` 负责把中文城市名映射到英文目录：
+`city_index.json` 只表示城市与英文目录的映射。城市在索引中存在，不代表已经有线路文件。
 
-```json
-{
-  "province": "江苏",
-  "provinceSlug": "jiangsu",
-  "city": "无锡",
-  "citySlug": "wuxi"
-}
-```
-
-## 线路文件格式
-
-每条线路一个 JSON 文件，建议命名为 `line_1.json`、`line_2.json` 或 `line_s1.json`。
+## 线路示例
 
 ```json
 {
@@ -37,27 +28,33 @@ data/metro/
   "source": "AMap POI station list, manual toilet status",
   "stations": [
     { "name": "堰桥", "toilet": 1 },
-    { "name": "锡北运河", "toilet": 1 }
+    { "name": "三阳广场", "toilet": 2 }
   ]
 }
 ```
 
-`toilet` 字段含义：
+## 状态
 
-- `1`: 有厕所
-- `0`: 没有厕所
-- `2`: 不确定
+- `1`：有厕所，绿色。
+- `0`：没有厕所，红色。
+- `2`：不确定，橙色 `#F59E0B`。
 
-站点不需要写经纬度。后端会用高德按城市和站名查询站点位置。
+站点不保存坐标。后端通过高德按城市批量获取站点位置，再用站名匹配厕所状态。
 
-## 自动兜底
+## 当前盘点
 
-如果某个城市还没有人工维护的线路 JSON，后端仍会用高德 POI 按当前位置搜索附近地铁站，默认半径为 20km。
+截至 2026-08-04：
 
-自动兜底站点会显示为：
+- 52 个城市索引。
+- 5 个城市目录有线路文件。
+- 21 个线路文件。
+- 408 条站点记录：`1` 共 86 条，`2` 共 322 条，`0` 为 0 条。
 
-- `lineName`: `附近地铁站`
-- `toilet`: `2`
-- `source`: `amap`
+## 修改规则
 
-人工维护的线路数据优先级更高。后续确认某个城市的线路、颜色和厕所状态后，应补充到对应城市目录下的 `line_*.json`。
+1. 站名使用可被高德匹配的正式中文名。
+2. 未确认状态保持 `2`，不得猜测。
+3. 不添加经纬度。
+4. 跨市重复线路同步检查所有副本。
+5. JSON 修改后重启后端清除内存坐标索引。
+6. 更新 `docs/metro-data.md` 统计和根 `CHANGELOG.md`。

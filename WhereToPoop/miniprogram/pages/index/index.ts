@@ -122,6 +122,7 @@ Component({
       return {
         title: "拉了么｜快速查找附近厕所",
         path: "/pages/index/index",
+        imageUrl: "/assets/share-cover.png",
       };
     },
 
@@ -130,6 +131,7 @@ Component({
       return {
         title: "拉了么｜快速查找附近厕所",
         query: "",
+        imageUrl: "/assets/share-cover.png",
       };
     },    
 

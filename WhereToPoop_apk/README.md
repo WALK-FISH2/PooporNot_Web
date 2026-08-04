@@ -1,73 +1,80 @@
 # 拉了么 Android
 
-这是微信小程序 `WhereToPoop` 的原生 Android 版本，保留以下功能：
+状态：Active
 
-- 当前定位和重新定位
-- 城市字母索引与推荐城市
-- 城市内地点搜索和基准点选择
-- 300 m、500 m、1 km、3 km 范围厕所搜索
-- 厕所列表、地图 Marker、详情和距离
-- 最近地铁站与地铁厕所状态
-- 后端步行路线绘制
-- 高德地图优先、系统地图兜底的外部导航
-- 深色和浅色主题
+原生 Android 客户端位于 `WhereToPoop_apk/`，使用 Kotlin、高德 Android 地图与定位 SDK、Retrofit 和统一 Node 后端。
+
+## 当前功能
+
+- 当前定位和重新定位。
+- 定位失败或拒绝权限后选择城市和地点。
+- 推荐城市与字母索引。
+- 300 m、500 m、1 km、3 km 厕所搜索。
+- 厕所列表、标记、详情和距离。
+- 基准点 20 km 内地铁站与最近 10 站。
+- 地铁厕所状态：绿色 `1`、红色 `0`、橙色 `2`。
+- 后端步行路线绘制与摘要。
+- 高德地图优先、系统 `geo:` Intent 兜底的外部导航。
+- Android 深浅主题与高德日/夜地图。
+
+Android 当前仍调用 `/api/navigation`，与已经取消内部路线的微信小程序不同。
 
 ## 开发环境
 
-- Android Studio
-- Android SDK Platform 35
-- Android SDK Build-Tools
-- Android SDK Platform-Tools
-- Android Emulator（可选，使用真机测试时不必安装模拟器）
+- Android Studio。
+- JDK 17。
+- Android SDK Platform 35。
+- Gradle 8.9 / Android Gradle Plugin 8.7.3。
+- 有效高德 Android Key。
 
-Android Studio 自带运行 Gradle 所需的 JDK，无需单独安装 Java。
+最低运行版本为 Android API 24，目标 API 35。
 
 ## 配置
 
-1. 将 `local.properties.example` 复制为 `local.properties`。
-2. 设置本机 Android SDK 路径。
-3. 填写高德开放平台的 Android Key：
+根据 `WhereToPoop_apk/local.properties.example` 创建 `WhereToPoop_apk/local.properties`：
 
 ```properties
-AMAP_ANDROID_KEY=你的高德AndroidKey
+sdk.dir=replace-with-android-sdk-path
+API_BASE_URL=https\://pp.nuanzhualife.cn/
+AMAP_ANDROID_KEY=replace-with-your-amap-android-key
 ```
 
-4. 设置后端地址：
-
-```properties
-API_BASE_URL=http\://124.220.73.65\:5174/
-```
-
-Android Key 的包名是：
+高德 Key 必须匹配：
 
 ```text
-com.poopornot.wheretopoop
+包名：com.poopornot.wheretopoop
+签名：当前 debug 或 release SHA1
 ```
 
-高德 Android Key 还需要匹配本机 debug 或 release 签名的 SHA1。
+`local.properties`、keystore 和签名密码不得提交。
 
-## 后端
+## 当前默认地址风险
 
-客户端默认连接：
-
-```text
-http://124.220.73.65:5174/
-```
-
-健康检查地址为 `http://124.220.73.65:5174/api/health`。服务端仍需配置
-`AMAP_WEB_SERVICE_KEY`，该密钥不要写入 Android 客户端。
+`WhereToPoop_apk/app/build.gradle.kts` 的代码 fallback 仍是旧公网 HTTP IP，manifest 也允许明文流量。本机或正式构建必须用 `local.properties`/Gradle 属性覆盖为 HTTPS。正式发布前应评估关闭明文流量，详见 `docs/security-privacy.md`。
 
 ## 构建
 
-用 Android Studio 打开本目录，等待 Gradle Sync 后运行 `app`。也可以使用：
+用 Android Studio 打开 `WhereToPoop_apk/`，或执行：
 
 ```powershell
+Set-Location WhereToPoop_apk
 .\gradlew.bat assembleDebug
 ```
 
-Debug APK 输出到：
+输出：
 
 ```text
-app\build\outputs\apk\debug\app-debug.apk
+WhereToPoop_apk/app/build/outputs/apk/debug/app-debug.apk
 ```
 
+若提示 Android Gradle Plugin 要求 Java 17，切换 Android Studio Gradle JDK 或 `JAVA_HOME`，不要使用 Java 14。
+
+## 验证
+
+- 定位授权、拒绝权限和手动城市流程。
+- 厕所、地点、半径和最近地铁站。
+- 路线终点必须与选中结果一致。
+- 安装/未安装高德地图两种外部导航路径。
+- HTTPS API、深浅主题和橙色未知状态。
+
+完整开发、测试和发布说明见 `docs/development.md`、`docs/testing.md` 和 `docs/release.md`。

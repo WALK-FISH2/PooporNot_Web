@@ -1,22 +1,50 @@
-# Metro Data
+# 地铁厕所数据
 
-Metro toilet data is stored as local JSON files:
+状态：Active
+
+本文件是 `data/metro/` 的正式开发说明。较短的维护提示仍保留在 `data/metro/README.md`，发生冲突时以当前代码和本文为准。
+
+## 1. 设计目标
+
+地铁线路、站名和厕所状态由仓库维护；站点经纬度由后端通过高德 POI 获取。这样可以避免在 JSON 中长期维护容易过期或不准确的坐标，同时让网页、小程序和 Android 共用一份厕所状态。
+
+客户端不绘制地铁线路几何。地图底图负责显示真实线路，Poopornot 只叠加站点状态标记。
+
+## 2. 目录结构
 
 ```text
-data/
-  metro/
-    <province_en>/
-      <city_en>/
-        <line_id>.json
+data/metro/
+  city_index.json
+  <provinceSlug>/
+    <citySlug>/
+      line_1.json
+      line_s1.json
 ```
 
-Example:
+示例：
 
 ```text
 data/metro/jiangsu/wuxi/line_1.json
 ```
 
-Each line file contains one metro line and only the toilet status we maintain:
+目录名使用英文 slug；省市中文名与 slug 的映射集中维护在 `data/metro/city_index.json`。
+
+## 3. 城市索引
+
+单条索引结构：
+
+```json
+{
+  "province": "江苏",
+  "provinceSlug": "jiangsu",
+  "city": "无锡",
+  "citySlug": "wuxi"
+}
+```
+
+当前索引包含 52 个城市、29 个省级区域。索引项表示“目录规划和城市映射”，不表示该城市已经有人工线路数据。后端只加载实际存在 JSON 文件的城市目录。
+
+## 4. 线路文件格式
 
 ```json
 {
@@ -24,21 +52,131 @@ Each line file contains one metro line and only the toilet status we maintain:
   "name": "Wuxi Metro Line 1",
   "displayName": "无锡地铁1号线",
   "color": "#c8102e",
-  "source": "manual toilet status",
+  "source": "AMap POI station list, manual toilet status",
   "stations": [
-    { "name": "堰桥", "toilet": 2 },
-    { "name": "无锡火车站", "toilet": 1 },
-    { "name": "三阳广场", "toilet": 0 }
+    { "name": "堰桥", "toilet": 1 },
+    { "name": "三阳广场", "toilet": 2 }
   ]
 }
 ```
 
-Fields:
+| 字段 | 必需 | 当前用途 |
+| --- | --- | --- |
+| `id` | 建议必需 | 后端返回的 `lineId`；缺失时使用文件名 |
+| `name` | 建议必需 | 英文或内部线路名；缺失时使用文件名 |
+| `displayName` | 建议必需 | 客户端展示的线路名 |
+| `color` | 建议必需 | 真实线路颜色；缺失时后端使用 `#888888` |
+| `source` | 建议必需 | 数据来源说明；当前 `server.js` 读取后不会返回给客户端 |
+| `stations` | 是 | 按线路顺序保存站名和厕所状态 |
 
-- `color`: line color used when we draw an optional overlay line.
-- `toilet`: `1` means has toilet, `0` means no toilet, `2` means unknown.
-- `stations[].name`: station name. Do not store coordinates here.
+站点只保存：
 
-Coordinates are resolved by the backend through AMap POI search. The backend detects the current city, loads all local line files for that city, searches AMap for each station, then returns station coordinates plus the local toilet status.
+```json
+{ "name": "站名", "toilet": 2 }
+```
 
-The frontend does not draw metro line geometry. AMap already renders the real metro lines on the basemap, so we only add toilet-status station markers on top of AMap's station positions.
+不要添加 `location`、`longitude` 或 `latitude`。如果坐标匹配错误，应优先改进站名规范化或后端匹配逻辑，而不是把坐标写回数据文件。
+
+## 5. 厕所状态与颜色
+
+| 值 | 含义 | 标记颜色 | 使用要求 |
+| --- | --- | --- | --- |
+| `1` | 有厕所 | 绿色 | 有可靠来源确认 |
+| `0` | 没有厕所 | 红色 | 有可靠来源确认 |
+| `2` | 不确定 | 橙色 `#F59E0B` | 默认值或尚未核验 |
+
+后端遇到缺失或非法 `toilet` 值会归一化为 `2`。历史版本曾把不确定状态显示为灰色，当前三端均已改为橙色。
+
+线路颜色和厕所状态颜色必须分开：`color` 描述线路品牌色，`toilet` 决定站点标记色。
+
+## 6. 当前数据盘点
+
+盘点日期：2026-08-04。
+
+| 城市目录 | 线路文件 | 站点条目 | 状态 |
+| --- | ---: | ---: | --- |
+| `anhui/chuzhou` | 1 | 10 | 全部 `2` |
+| `anhui/maanshan` | 1 | 16 | 全部 `2` |
+| `jiangsu/nanjing` | 14 | 283 | 全部 `2` |
+| `jiangsu/wuxi` | 4 | 86 | 全部 `1` |
+| `jiangsu/zhenjiang` | 1 | 13 | 全部 `2` |
+| 合计 | 21 | 408 | `1`: 86；`2`: 322；`0`: 0 |
+
+说明：
+
+- 无锡 1、2、3、4 号线当前全部标为“有厕所”。
+- 南京及跨市线路站点目前均为“待确认”。
+- 当前没有任何 `0` 记录；这不代表所有其他站都一定有厕所，而是尚未录入确认的“无厕所”数据。
+- 南京 S2 同时存在于 `jiangsu/nanjing` 和 `anhui/maanshan`；南京 S6 同时存在于 `jiangsu/nanjing` 和 `jiangsu/zhenjiang`。这是跨市检索的当前数据组织方式，但会带来重复维护风险。
+
+## 7. 坐标解析与跨城逻辑
+
+`GET /api/metro/nearby` 的当前流程：
+
+1. 逆地理编码基准点，得到当前省市，仅用于响应和调试显示。
+2. 找出 `city_index.json` 中实际存在 `line_*.json` 的城市。
+3. 每个城市首次加载时，最多分页 8 次查询“地铁站”，每页 25 条，建立站名到坐标的内存索引。
+4. 规范化站名：去空格、`地铁站`、`站` 和部分括号后缀。
+5. 把线路 JSON 站名与城市索引匹配，得到坐标。
+6. 计算站点到基准点的球面距离，只保留 `radius` 内站点。
+7. 再最多分页 4 次执行基准点周边地铁 POI 查询，补充人工数据未覆盖的站点；补充站点状态为 `2`。
+8. 按规范化站名和四位小数近似坐标去重，再按距离升序返回。
+
+因此地铁展示不依赖“线路是否属于用户当前行政城市”。用户位于城市边界时，20 km 内其他城市的站点仍可显示。
+
+## 8. 性能与缓存
+
+- 城市地铁站索引缓存在 Node 进程内的 `metroCityStationCache`。
+- 同一城市后续请求不再重复分页查询，直到后端重启。
+- 第一次请求仍可能扫描多个已有数据城市并消耗较多高德调用。
+- 缓存没有 TTL、持久化或手动刷新接口。
+- `AMAP_PAGE_DELAY_MS` 用于降低分页请求触发 QPS 限制的概率。
+
+早期“每个站单独查询一次高德”的方案会造成加载十几秒和 `CUQPS_HAS_EXCEEDED_THE_LIMIT`，现已移除。
+
+## 9. 新增或更新数据
+
+1. 先确认城市在 `city_index.json` 中存在且 slug 正确。
+2. 创建 `data/metro/<provinceSlug>/<citySlug>/`。
+3. 每条线路单独创建 `line_*.json`。
+4. 按实际顺序录入站名；默认不确定状态使用 `2`。
+5. 只有在可靠来源确认后才改为 `1` 或 `0`，并更新 `source`。
+6. 校验 JSON 可以解析、状态只包含 `0/1/2`、线路 ID 不冲突。
+7. 重启后端以清空站点坐标缓存。
+8. 在目标城市和城市边界位置调用 `/api/metro/nearby` 验证。
+9. 同步更新本文数据盘点和 `CHANGELOG.md`。
+
+## 10. 数据质量规则
+
+- 站名以高德可匹配的正式中文名称为主。
+- 不把推测写成 `1` 或 `0`；无法确认时保持 `2`。
+- 跨市同一线路的重复文件修改时必须同步检查另一份副本。
+- 线路开通、改名、延伸或停运时需要人工复核。
+- 当前没有自动数据校验脚本或 CI 门禁，属于待补能力。
+
+## 11. 当前状态分类
+
+### 当前有效
+
+- 单一共享数据源、站名与厕所状态本地维护、坐标由高德解析。
+- 20 km 附近搜索和跨城市边界显示。
+- 绿色/红色/橙色状态规则。
+
+### 曾经实现但已移除
+
+- 在线路 JSON 中维护 `location`。
+- 前端连接站点绘制直线地铁线路。
+- 后端逐站请求高德坐标。
+
+### 尚未实现
+
+- 全国 52 个索引城市的完整人工线路文件。
+- 自动校验、来源审计、更新时间、维护人和投票更新流程。
+- 对跨市重复线路的单一来源建模。
+
+## 12. 待确认
+
+- 现有 322 条 `2` 状态的可靠核验来源和优先级。
+- 无锡全部标记为 `1` 的来源、核验日期和可追溯证据。
+- 南京 S4 是否也应在南京目录保留镜像文件。
+- 是否把 `source`、`verifiedAt`、`verifiedBy` 纳入正式数据 schema。

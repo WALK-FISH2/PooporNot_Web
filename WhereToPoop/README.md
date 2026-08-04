@@ -1,92 +1,84 @@
-# 拉了么小程序
+# 拉了么微信小程序
 
-微信小程序版本，主界面为地图，用于选择城市和基准地点，然后查找周围公共厕所，并叠加城市地铁站厕所状态。
+状态：Active
 
-## 结构
-
-- `miniprogram/`: 微信小程序前端
-- `D:\Work\Poopornot\03_SourceCode\server.js`: 统一 Node 后端，同时服务网页版和小程序 API
-- `D:\Work\Poopornot\03_SourceCode\data\metro`: 地铁厕所状态数据
-
-高德 WebService Key 只放在统一后端，小程序不直接请求高德。
-
-## 后端配置
-
-编辑：
-
-```text
-D:\Work\Poopornot\03_SourceCode\.env
-```
-
-填写：
-
-```env
-AMAP_WEB_SERVICE_KEY=你的高德WebServiceKey
-AMAP_JS_KEY=你的高德JSAPIKey
-AMAP_SECURITY_JS_CODE=你的安全密钥
-PORT=5173
-```
-
-启动后端：
-
-```powershell
-cd D:\Work\Poopornot\03_SourceCode
-node server.js
-```
-
-## 小程序配置
-
-小程序请求后端地址在：
-
-```text
-miniprogram/config/api.ts
-```
-
-开发者工具模拟器默认可用：
-
-```ts
-export const API_BASE_URL = "http://127.0.0.1:5173";
-```
-
-真机调试时，需要改成电脑局域网 IP，例如：
-
-```ts
- = "http://192.168.1.23:5173";
-```
-
-开发阶段在微信开发者工具勾选：
-
-```text
-详情 -> 本地设置 -> 不校验合法域名、web-view（业务域名）、TLS 版本以及 HTTPS 证书
-```
-
-正式发布时，后端需要部署到 HTTPS 域名，并在微信公众平台配置 request 合法域名。
+微信小程序客户端位于 `WhereToPoop/`，使用微信原生 `map` 组件展示地图，通过项目根目录的 `server.js` 查询地点、厕所、城市和地铁站。
 
 ## 当前功能
 
-- 输入城市并切换地图基准城市
-- 搜索具体地点，地点候选使用非厕所图标
-- 选定地点作为基准点
-- 以 300m、500m、1km、3km 半径搜索周围公共厕所
-- 公共厕所地图标点、列表、详情和步行路线
-- 地铁站厕所状态标点、详情和路线
-- 白天/夜晚 UI 切换
+- 启动时定位、识别当前城市并自动搜索默认 500 m 内厕所。
+- 定位失败时选择城市和具体地点。
+- 推荐城市和字母索引城市选择器。
+- 300 m、500 m、1 km、3 km 半径；改变半径后自动查询。
+- 厕所列表、地图标记、距离和详情。
+- 基准点 20 km 内地铁站与最近 10 站列表。
+- 地铁厕所状态：绿色 `1`、红色 `0`、橙色 `2`。
+- `wx.openLocation` 导航。
+- UI 深浅色、分享和 `UpdateManager`。
 
-## 地铁数据
+小程序当前没有“路线”按钮，不调用 `/api/navigation`，也不在内部绘制路线。
 
-无锡地铁厕所状态维护在：
+## 目录
 
 ```text
-D:\Work\Poopornot\03_SourceCode\data\metro\jiangsu\wuxi
+WhereToPoop/
+  miniprogram/
+    config/api.ts
+    data/cities.ts
+    pages/index/
+    services/api.ts
+  project.config.json
+  tsconfig.json
 ```
 
-目前无锡 1/2/3/4 号线都按“有厕所”标为 `1`。
+地铁厕所状态不在小程序目录维护，统一来自 `data/metro/`。
 
+## 后端
+
+先从项目根目录启动：
+
+```powershell
+npm start
 ```
-TODO:小程序前端页面修改 （城市改为可选择，好像不改也行） 地点和城市改为同一行 下面的半径和查厕所保留  厕所地铁站按钮可以取消 结果部分占的面积大一些
-右上角只保留定位按钮和夜间模式转换按钮，定位按钮请你重新画一下
-选定半径后即查询厕所，不用点击“查厕所”按钮（但是按钮也保留）
-小程序的地图的夜间模式，地图不会转换成夜间模式，请你看看腾讯地图有没有自带的夜间模式接口可以调用。
 
+后端默认端口是 `5174`，实际可由根 `.env` 覆盖。高德 Web Service Key 只放在后端，小程序不需要 `AMAP_JS_KEY`、`AMAP_SECURITY_JS_CODE` 或 `AMAP_WEB_SERVICE_KEY`。
 
+## API 配置
+
+编辑 `WhereToPoop/miniprogram/config/api.ts`。
+
+当前生产地址：
+
+```ts
+export const API_BASE_URL = "https://pp.nuanzhualife.cn"
 ```
+
+开发者工具模拟器临时连接本机默认后端：
+
+```ts
+export const API_BASE_URL = "http://127.0.0.1:5174";
+```
+
+真机中的 `127.0.0.1` 不是开发电脑。二维码预览和正式发布必须使用 HTTPS 域名，并在微信公众平台设置 `request` 合法域名。
+
+## 腾讯地图样式
+
+以下值默认为空：
+
+```ts
+export const TENCENT_MAP_SUBKEY = "";
+export const TENCENT_MAP_STYLE_LIGHT = "";
+export const TENCENT_MAP_STYLE_DARK = "";
+```
+
+空值时只切换 UI 深浅色。要切换地图底图，需在腾讯位置服务控制台创建有效个性化样式；不要填写 `0`。
+
+## 开发与发布检查
+
+- 用微信开发者工具导入本目录。
+- 开发阶段可临时跳过合法域名校验，但手机二维码预览和发布前必须关闭。
+- 真机验证定位授权、拒绝定位、城市/地点、半径、地铁、分享和 `wx.openLocation`。
+- 确认结果和详情中没有“路线”，网络面板没有 `/api/navigation`。
+- 修改后同步根 `CHANGELOG.md`。
+
+完整说明见 `docs/configuration.md`、`docs/development.md`、`docs/testing.md` 和 `docs/release.md`。
