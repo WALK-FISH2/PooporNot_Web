@@ -2,204 +2,213 @@
 
 状态：Active
 
-实现来源：`server.js`。本文记录当前代码行为，不代表外部地图服务的长期稳定契约。
+实现来源：`server.js`、`lib/`。本文记录 2026-08-05 当前代码行为。
 
 ## 1. 通用约定
 
-- 协议：HTTP/HTTPS 由部署环境决定；正式小程序必须通过 HTTPS 域名访问。
-- API 方法：当前均为 `GET`；预检请求支持 `OPTIONS`。
-- 数据格式：API 成功和失败均返回 UTF-8 JSON。
-- 跨域：当前响应 `Access-Control-Allow-Origin: *`，允许 `GET,OPTIONS`。
-- 认证：当前无认证、签名或用户会话。
-- 坐标：客户端与后端使用经度 `lng`、纬度 `lat`；地图交互统一按 GCJ-02 使用。
-- 非 API 路径：由后端从项目根目录提供静态文件。
+- 所有 API 为 `GET`，预检支持 `OPTIONS`，成功和失败均使用 UTF-8 JSON。
+- 当前 CORS 为 `Access-Control-Allow-Origin: *`，没有认证、签名或用户会话。
+- 未传 `region=overseas` 的地点、厕所和地铁请求默认走原中国大陆高德链路。
+- 中国大陆坐标为 `GCJ02`；海外请求必须显式传 `coordinateSystem=WGS84`。
+- 海外国家代码使用两位小写 ISO 代码，例如 `sg`、`gb`。
+- 非 API 路径由后端从项目根目录提供静态文件。
 
-失败响应的通用结构：
+失败响应：
 
 ```json
 { "error": "错误说明" }
 ```
 
-## 2. 接口目录
+海外查询响应通常增加以下元数据；国内旧字段不删除：
+
+```json
+{
+  "providerUsed": "geoapify",
+  "isFallback": false,
+  "truncated": false,
+  "rawCount": 12,
+  "displayCount": 12,
+  "messageCode": "",
+  "message": "",
+  "coordinateSystem": "WGS84",
+  "retrievedAt": "2026-08-05T00:00:00.000Z",
+  "durationMs": 120
+}
+```
+
+## 2. 基础接口
 
 ### 2.1 `GET /api/health`
 
-用途：进程健康检查。
-
-请求参数：无。
-
-成功响应：
-
-```json
-{ "ok": true }
-```
-
-该接口不依赖高德 Key，只证明 Node 进程能响应，不验证外部服务、地铁文件或证书状态。
+返回 `{ "ok": true }`。它只证明进程可响应，不检查地图供应商、Key 或证书。
 
 ### 2.2 `GET /api/config`
 
-用途：给网页版提供高德 JS API 浏览器配置。
-
-成功响应：
+给网页返回：
 
 ```json
-{
-  "jsKey": "...",
-  "securityJsCode": "..."
-}
+{ "jsKey": "...", "securityJsCode": "..." }
 ```
 
-`AMAP_JS_KEY` 和 `AMAP_SECURITY_JS_CODE` 会发送到浏览器，因此必须在高德控制台配置域名限制。`AMAP_WEB_SERVICE_KEY` 不会由此接口返回。
+`AMAP_JS_KEY` 与 `AMAP_SECURITY_JS_CODE` 会发送给浏览器；`AMAP_WEB_SERVICE_KEY` 和 `GEOAPIFY_API_KEY` 不返回。
 
-### 2.3 `GET /api/location/reverse`
+### 2.3 `GET /api/global/cities`
 
-用途：根据基准坐标识别省市，用于自动填写当前城市。
-
-参数：
-
-| 名称 | 必填 | 说明 |
-| --- | --- | --- |
-| `lng` | 是 | 经度，范围 `-180..180` |
-| `lat` | 是 | 纬度，范围 `-90..90` |
-
-成功响应示例：
+返回海外文字搜索快捷城市。无参数，不调用外部服务。
 
 ```json
 {
-  "province": "江苏",
-  "city": "无锡",
-  "provinceSlug": "jiangsu",
-  "citySlug": "wuxi"
-}
-```
-
-直辖市以省级名称作为城市回退值；其他地区在高德未返回 `city` 时使用 `district` 回退。
-
-### 2.4 `GET /api/places`
-
-用途：切换城市、搜索具体地点并选择查询基准点。
-
-参数：
-
-| 名称 | 必填 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `city` | 否 | 空 | 城市名；有值时普通文本搜索启用 `citylimit` |
-| `keywords` | 否 | 空 | 小区、商场、地铁站或地址关键词 |
-| `mode` | 否 | 空 | 值为 `city` 时改用地理编码定位城市 |
-| `limit` | 否 | `10` | 约束到 `1..25` |
-
-`city` 和 `keywords` 至少需要一个。普通搜索没有结果时会尝试地理编码回退。
-
-成功响应示例：
-
-```json
-{
-  "city": "无锡",
-  "keywords": "三阳广场",
-  "places": [
+  "cities": [
     {
-      "id": "高德 POI ID",
-      "name": "三阳广场",
-      "address": "...",
-      "cityName": "无锡",
-      "district": "梁溪区",
-      "distance": 0,
-      "type": "...",
-      "tel": "...",
-      "longitude": 120.0,
-      "latitude": 31.0,
-      "location": { "lng": 120.0, "lat": 31.0 }
+      "id": "singapore",
+      "countryCode": "sg",
+      "nameZh": "新加坡",
+      "nameLocal": "Singapore",
+      "center": { "latitude": 1.2899, "longitude": 103.8519 },
+      "defaultScale": 11
     }
   ]
 }
 ```
 
-当 `mode=city` 时，响应保留 `city` 和 `places`，不保证存在 `keywords` 字段。
+边界只保存在后端配置，不发送给小程序。
 
-### 2.5 `GET /api/toilets`
+## 3. 地理编码与地点
 
-用途：搜索基准点附近公共厕所。
+### 3.1 `GET /api/location/reverse`
 
-参数：
+公共参数：
+
+| 名称 | 必填 | 说明 |
+| --- | --- | --- |
+| `lng` | 是 | 经度 `-180..180` |
+| `lat` | 是 | 纬度 `-90..90` |
+| `scope` | 否 | `global` 时使用 Geoapify WGS84 识别国家；不传时使用高德国内链路 |
+
+国内兼容响应包含 `province`、`city`、`provinceSlug`、`citySlug`，并增加 `countryCode=cn`、`regionMode=mainland`、`coordinateSystem=GCJ02`。
+
+全局响应示例：
+
+```json
+{
+  "province": "Singapore",
+  "city": "Singapore",
+  "district": "Downtown Core",
+  "country": "Singapore",
+  "countryCode": "sg",
+  "cityId": "...",
+  "regionMode": "overseas",
+  "coordinateSystem": "WGS84",
+  "providerUsed": "geoapify"
+}
+```
+
+若全局逆地理结果国家为中国，`regionMode` 为 `mainland`，但本次返回坐标元数据仍是 `WGS84`；小程序随后重新获取 GCJ-02 进入国内流程。
+
+### 3.2 `GET /api/places`
+
+#### 国内兼容模式
 
 | 名称 | 必填 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `lng` | 是 | - | 基准点经度 |
-| `lat` | 是 | - | 基准点纬度 |
-| `radius` | 否 | `1000` | 米，约束到 `100..50000` |
-| `keywords` | 否 | `公共厕所` | 高德周边搜索关键词 |
-| `limit` | 否 | `100` | 约束到 `25..200` |
+| `city` | 否 | 空 | 有值时高德文本搜索启用 `citylimit` |
+| `keywords` | 否 | 空 | 地点或地址关键词 |
+| `mode` | 否 | 空 | `city` 时使用高德地理编码移动城市视口 |
+| `limit` | 否 | `10` | `1..25` |
 
-后端固定每页请求 25 条，按距离排序，并最多请求 `ceil(limit / 25)` 页。第 2 页起每页等待 `AMAP_PAGE_DELAY_MS`。一个客户端请求不是“每返回一个厕所消耗一次请求”，而是通常每页消耗一次高德周边搜索调用。
+`city` 和 `keywords` 至少一个有值。未传海外参数时响应仍含 `city`、`keywords` 和 `places`。
 
-成功响应示例：
+#### 海外模式
+
+额外/替代参数：
+
+| 名称 | 必填 | 说明 |
+| --- | --- | --- |
+| `region=overseas` | 是 | 选择海外分支 |
+| `cityId` | 是 | `data/global/cities.json` 中的稳定 ID |
+| `countryCode` | 是 | 必须与城市配置一致 |
+| `keywords` | 是 | 用户点击“搜地点”时提交 |
+| `coordinateSystem` | 否 | 当前客户端传 `WGS84`；地点搜索由城市配置决定坐标 |
+
+Geoapify 请求同时使用城市矩形与国家代码硬过滤，后端再过滤边界外候选。仅有 proximity bias 不足以通过校验。
+
+地点对象的兼容最小字段：
+
+```json
+{
+  "id": "geoapify:...",
+  "sourceId": "...",
+  "source": "geoapify",
+  "providerUsed": "geoapify",
+  "type": "place",
+  "name": "地点名",
+  "address": "地址",
+  "longitude": -0.12,
+  "latitude": 51.50,
+  "coordinateSystem": "WGS84",
+  "countryCode": "gb",
+  "retrievedAt": "..."
+}
+```
+
+国内地点对象继续保留 `cityName`、`district`、`distance`、`tel` 和 `location` 等旧字段。
+
+## 4. POI 查询
+
+### 4.1 `GET /api/toilets`
+
+公共参数：
+
+| 名称 | 必填 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `lng` / `lat` | 是 | - | 查询中心 |
+| `radius` | 否 | `1000` | 国内约束 `100..50000`；海外实际约束 `100..3000` |
+| `keywords` | 否 | `公共厕所` | 国内高德关键词；海外忽略 |
+| `limit` | 否 | `100` | 国内约束 `25..200`；海外上限由供应商策略决定 |
+
+海外还必须传 `region=overseas`、`coordinateSystem=WGS84` 和 `countryCode`。
+
+国内保持高德每页 25 条、最多 `ceil(limit/25)` 页的行为。海外直接查询 Geoapify `amenity.toilet`，按后端计算距离筛选和排序，最多 100 个。
+
+响应主字段：
 
 ```json
 {
   "pois": [],
-  "radius": 1000,
+  "radius": 500,
   "total": 0,
-  "partial": false
+  "partial": false,
+  "providerUsed": "geoapify",
+  "isFallback": false,
+  "truncated": false,
+  "message": ""
 }
 ```
 
-- `pois`：与地点结果相同的标准化 POI 结构。
-- `total`：高德报告的结果总数，不保证等于本次返回数量。
-- `partial`：已有部分结果后遇到高德限流时为 `true`。
+- 国内 `partial` 表示已有结果后遇到高德限流。
+- 海外当前为 Geoapify 单供应商直连，正常响应 `partial=false`、`isFallback=false`。
+- Geoapify 范围内超过 100 个时 `truncated=true`；响应只包含最近 100 个。
 
-### 2.6 `GET /api/navigation`
-
-用途：查询步行路线。当前消费者是网页版和 Android；微信小程序已停止调用。
-
-参数：
-
-| 名称 | 必填 | 说明 |
-| --- | --- | --- |
-| `origin` | 是 | `lng,lat` |
-| `destination` | 是 | `lng,lat` |
-
-成功响应示例：
-
-```json
-{
-  "distance": 850,
-  "duration": 720,
-  "points": [
-    { "longitude": 120.0, "latitude": 31.0 }
-  ],
-  "steps": [
-    { "instruction": "向北步行...", "distance": 100, "duration": 80 }
-  ]
-}
-```
-
-`distance` 单位为米，`duration` 单位为秒。高德返回 `OVER_DIRECTION_RANGE` 时，后端转换为 HTTP 400 和面向用户的“距离过远”说明，不再导致 Node 进程退出。
-
-### 2.7 `GET /api/metro/nearby`
-
-用途：返回基准点一定范围内的地铁站及厕所状态。
-
-参数：
+### 4.2 `GET /api/metro/nearby`
 
 | 名称 | 必填 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `lng` | 是 | - | 基准点经度 |
-| `lat` | 是 | - | 基准点纬度 |
-| `radius` | 否 | `20000` | 米，约束到 `1000..50000` |
-| `debugCity` | 否 | 空 | 调试时覆盖响应中的城市名；不限制空间过滤范围 |
+| `lng` / `lat` | 是 | - | 查询中心 |
+| `radius` | 否 | `20000` | 约束到 `1000..20000` |
+| `limit` | 否 | `10` | 约束到 `1..10` |
+| `debugCity` | 否 | 空 | 仅覆盖国内响应城市显示，不改变空间范围 |
 
-成功响应示例：
+海外还必须传 `region=overseas`、`coordinateSystem=WGS84`、`countryCode`；`cityId` 用于响应和诊断，不构成 POI 白名单。
+
+国内每次只调用一次高德周边地铁站查询，按城市和规范化站名匹配 `data/metro` 状态。未匹配或有歧义时 `toilet=2`。海外直接查询 Geoapify `public_transport.subway`；海外站点统一 `toilet=2`。
+
+响应保留旧主结构：
 
 ```json
 {
   "city": "无锡",
   "hasMetro": true,
-  "location": {
-    "province": "江苏",
-    "city": "无锡",
-    "provinceSlug": "jiangsu",
-    "citySlug": "wuxi"
-  },
+  "location": { "province": "江苏", "city": "无锡" },
   "radius": 20000,
   "lines": [],
   "stations": [
@@ -208,54 +217,44 @@
       "toilet": 1,
       "longitude": 120.3,
       "latitude": 31.57,
-      "lineId": "wuxi_line_1",
       "lineName": "无锡地铁1号线",
-      "lineColor": "#c8102e",
-      "city": "无锡",
-      "province": "江苏",
-      "distance": 1000
+      "distance": 1000,
+      "coordinateSystem": "GCJ02"
     }
   ]
 }
 ```
 
-行为说明：
+结果按距离升序并最多 10 个。地铁只由客户端专用按钮调用；接口本身不管理客户端触发时机。
 
-- 后端扫描实际存在地铁线路文件的城市，而不是只按当前行政城市加载。
-- 人工线路站名与高德城市地铁站索引匹配后，再按坐标和半径过滤。
-- 同时调用高德周边搜索补充附近地铁站；补充项使用 `toilet: 2`、`lineName: "附近地铁站"`、`source: "amap"`。
-- `stations` 按距离升序返回，并按规范化站名与约 1e-4 度坐标去重。
-- `lines` 只含人工线路中落在范围内且成功匹配坐标的站点；客户端当前主要使用扁平 `stations`。
-- 当前 `slugifyCn` 只有江苏、无锡和南京的显式英文别名；其他纯中文省市可能得到空 slug。附近地铁主流程不依赖这些 slug，但接口消费者不应假定它们总是非空。
+## 5. 路线接口
 
-## 3. 错误状态
+### `GET /api/navigation`
 
-| 场景 | HTTP 状态 | 响应 |
-| --- | --- | --- |
-| 坐标或必填参数无效 | `400` | `{ "error": "..." }` |
-| 步行路线不存在 | `404` | `{ "error": "没有找到可用步行路线" }` |
-| 高德返回业务错误或配额错误 | `502` | `{ "error": "高德错误信息" }` |
-| 其他未处理错误 | `500` | `{ "error": "..." }` |
-| 静态文件不存在 | `404` | 纯文本 `Not found` |
+参数为 `origin=lng,lat` 和 `destination=lng,lat`，调用高德步行路线，返回 `distance`、`duration`、`points` 和 `steps`。当前消费者是网页和 Android；微信小程序不调用。`OVER_DIRECTION_RANGE` 映射为 HTTP 400，不会使进程退出。
 
-`AMAP_WEB_SERVICE_KEY` 缺失当前会抛出普通错误并返回 HTTP 500。
+## 6. 错误状态
 
-## 4. 配额与性能
+| 场景 | HTTP | 说明 |
+| --- | ---: | --- |
+| 参数、城市、国家或坐标系无效 | 400 | 可读 JSON 错误 |
+| 步行路线不存在 | 404 | 无可用路线 |
+| 高德业务错误 | 502 | 高德错误说明 |
+| 单个第三方网络/HTTP/非法响应 | 502/503/504 | 客户端返回通用第三方服务错误 |
+| 缺少 Geoapify Key | 503 | 明确缺少后端配置 |
+| 其他未处理错误 | 500 | 服务器错误 |
 
-- `/api/toilets` 默认最多触发 4 次高德周边搜索；若结果不足 25 条会提前停止。
-- `/api/metro/nearby` 首次运行可能为每个已维护城市建立分页地铁站索引，随后同一进程复用内存缓存；另有最多 4 页的附近地铁站兜底请求。
-- 地铁缓存没有 TTL；修改站点坐标来源或高德数据后需要重启后端才能刷新。
-- 当前没有服务器端请求限流、熔断或厕所查询缓存。
+日志中的供应商诊断会脱敏 Key；响应不返回完整第三方 URL 或密钥。
 
-## 5. 兼容与变更规则
+## 7. 兼容与限制
 
-- 客户端不得依赖未记录的高德原始字段。
-- 新增字段优先保持向后兼容；删除或改名字段前应建立 ADR 或功能规格。
-- 修改接口后同步更新 `docs/api.md`、相关客户端类型和 `CHANGELOG.md`。
+- 未传海外参数的原接口路径和核心字段保持兼容；国内地铁按已确认规格改为单次周边查询、20 km、最多 10 站。
+- 海外范围暂不用于网页和 Android。
+- 当前没有 API 版本、认证、服务器端缓存、重试轮询或请求限流。
+- 修改契约时同步客户端类型、本文件和 `CHANGELOG.md`。
 
-## 6. 待确认
+## 8. 待确认
 
-- API 版本化方案，例如是否引入 `/api/v1/`。
-- 生产环境认证、滥用防护和请求限流策略。
-- `debugCity` 是否应仅在开发环境启用。
-- 对外 SLA、超时和重试约定。
+- API 版本化、生产限流与滥用防护。
+- Geoapify 配额预算、告警阈值和必要时的第二供应商方案。
+- `debugCity` 是否只在开发环境暴露。

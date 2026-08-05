@@ -2,6 +2,9 @@ const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
 const { URL } = require("node:url");
+const { createGlobalPoiService } = require("./lib/global-poi-service");
+const { COORDINATE_SYSTEMS } = require("./lib/poi");
+const { safeProviderError } = require("./lib/provider-error");
 
 const rootDir = __dirname;
 const metroDataDir = path.join(rootDir, "data", "metro");
@@ -13,8 +16,17 @@ const AMAP_JS_KEY = process.env.AMAP_JS_KEY || "";
 const AMAP_SECURITY_JS_CODE = process.env.AMAP_SECURITY_JS_CODE || "";
 const AMAP_WEB_SERVICE_KEY = process.env.AMAP_WEB_SERVICE_KEY || process.env.AMAP_KEY || "";
 const AMAP_PAGE_DELAY_MS = Number(process.env.AMAP_PAGE_DELAY_MS || 260);
+const GEOAPIFY_API_KEY = process.env.GEOAPIFY_API_KEY || "";
+const GEOAPIFY_BASE_URL = process.env.GEOAPIFY_BASE_URL || "https://api.geoapify.com";
+const GEOAPIFY_TIMEOUT_MS = Number(process.env.GEOAPIFY_TIMEOUT_MS || 4000);
 const metroCityStationCache = new Map();
 let metroCityIndexCache = null;
+let localMetroStatusCache = null;
+const globalPoiService = createGlobalPoiService({
+  geoapifyApiKey: GEOAPIFY_API_KEY,
+  geoapifyBaseUrl: GEOAPIFY_BASE_URL,
+  providerTimeoutMs: GEOAPIFY_TIMEOUT_MS,
+});
 
 const PROVINCE_SLUG_ALIASES = {
   江苏: "jiangsu",
@@ -60,6 +72,10 @@ const server = http.createServer(async (req, res) => {
       });
     }
 
+    if (reqUrl.pathname === "/api/global/cities") {
+      return sendJson(res, { cities: globalPoiService.getCities() });
+    }
+
     if (reqUrl.pathname === "/api/location/reverse") {
       return await handleReverseLocation(reqUrl, res);
     }
@@ -82,7 +98,7 @@ const server = http.createServer(async (req, res) => {
 
     return serveStatic(reqUrl.pathname, res);
   } catch (error) {
-    console.error(error);
+    console.error("Request failed", safeProviderError(error, [AMAP_WEB_SERVICE_KEY, GEOAPIFY_API_KEY]));
     return sendJson(res, { error: getClientErrorMessage(error) }, getErrorStatus(error));
   }
 });
@@ -92,25 +108,59 @@ server.listen(PORT, () => {
 });
 
 async function handleReverseLocation(reqUrl, res) {
-  requireAmapKey();
-
   const lng = reqUrl.searchParams.get("lng");
   const lat = reqUrl.searchParams.get("lat");
   if (!isLngLat(lng, lat)) {
     return sendJson(res, { error: "当前基准点坐标无效" }, 400);
   }
 
+  if (isGlobalReverseRequest(reqUrl)) {
+    const result = await globalPoiService.reverse({ longitude: Number(lng), latitude: Number(lat) });
+    logQueryDiagnostic("reverse", "global", result);
+    return sendJson(res, result);
+  }
+
+  requireAmapKey();
+
   const location = await reverseGeocode(lng, lat);
-  return sendJson(res, location);
+  const mainland = isMainlandAmapLocation(location);
+  return sendJson(res, {
+    ...location,
+    countryCode: mainland ? "cn" : "",
+    cityId: "",
+    regionMode: mainland ? "mainland" : "overseas",
+    coordinateSystem: COORDINATE_SYSTEMS.GCJ02,
+    providerUsed: "amap",
+    retrievedAt: new Date().toISOString(),
+  });
 }
 
 async function handlePlaceSearch(reqUrl, res) {
-  requireAmapKey();
-
   const city = normalizeText(reqUrl.searchParams.get("city")).trim();
   const keywords = normalizeText(reqUrl.searchParams.get("keywords")).trim();
   const mode = normalizeText(reqUrl.searchParams.get("mode")).trim();
   const limit = clampNumber(reqUrl.searchParams.get("limit"), 1, 25, 10);
+
+  if (getRegionMode(reqUrl) === "overseas") {
+    const cityId = normalizeText(reqUrl.searchParams.get("cityId")).trim();
+    const countryCode = normalizeCountryCode(reqUrl.searchParams.get("countryCode"));
+    if (!cityId || !keywords) return sendJson(res, { error: "请先选择海外城市并输入地点" }, 400);
+    if (!countryCode) return sendJson(res, { error: "海外城市国家代码无效" }, 400);
+    const configuredCity = globalPoiService.getCity(cityId);
+    if (configuredCity.countryCode !== countryCode) {
+      return sendJson(res, { error: "海外城市与国家代码不匹配" }, 400);
+    }
+    const result = await globalPoiService.searchPlaces({ cityId, keywords, limit });
+    logQueryDiagnostic("places", "overseas", result, { cityId, countryCode });
+    return sendJson(res, {
+      city: cityId,
+      keywords,
+      places: result.places,
+      ...withoutPlaces(result),
+    });
+  }
+
+  requireAmapKey();
 
   if (!city && !keywords) {
     return sendJson(res, { error: "请先输入城市或地点" }, 400);
@@ -121,6 +171,8 @@ async function handlePlaceSearch(reqUrl, res) {
     return sendJson(res, {
       city: city || keywords,
       places: cityPlace ? [cityPlace] : [],
+      providerUsed: "amap",
+      coordinateSystem: COORDINATE_SYSTEMS.GCJ02,
     });
   }
 
@@ -145,12 +197,15 @@ async function handlePlaceSearch(reqUrl, res) {
     city,
     keywords: searchKeyword,
     places,
+    providerUsed: "amap",
+    coordinateSystem: COORDINATE_SYSTEMS.GCJ02,
+    isFallback: false,
+    rawCount: places.length,
+    displayCount: places.length,
   });
 }
 
 async function handleToiletSearch(reqUrl, res) {
-  requireAmapKey();
-
   const lng = reqUrl.searchParams.get("lng");
   const lat = reqUrl.searchParams.get("lat");
   const radius = clampNumber(reqUrl.searchParams.get("radius"), 100, 50000, 1000);
@@ -162,6 +217,29 @@ async function handleToiletSearch(reqUrl, res) {
   if (!isLngLat(lng, lat)) {
     return sendJson(res, { error: "当前基准点坐标无效" }, 400);
   }
+
+  if (getRegionMode(reqUrl) === "overseas") {
+    const countryCode = normalizeCountryCode(reqUrl.searchParams.get("countryCode"));
+    if (!countryCode) return sendJson(res, { error: "海外查询国家代码无效" }, 400);
+    if (normalizeText(reqUrl.searchParams.get("coordinateSystem")) !== COORDINATE_SYSTEMS.WGS84) {
+      return sendJson(res, { error: "海外查询必须使用 WGS84 坐标" }, 400);
+    }
+    const result = await globalPoiService.queryToilets({
+      center: { longitude: Number(lng), latitude: Number(lat) },
+      radius: clampNumber(radius, 100, 3000, 500),
+      countryCode,
+    });
+    logQueryDiagnostic("toilets", "overseas", result, { lng: Number(lng), lat: Number(lat), radius, countryCode });
+    return sendJson(res, {
+      pois: result.places,
+      radius,
+      total: result.rawCount,
+      partial: result.isFallback,
+      ...withoutPlaces(result),
+    });
+  }
+
+  requireAmapKey();
 
   const pois = [];
   const seen = new Set();
@@ -206,6 +284,13 @@ async function handleToiletSearch(reqUrl, res) {
     radius,
     total,
     partial,
+    providerUsed: "amap",
+    isFallback: false,
+    truncated: total > pois.length,
+    rawCount: total,
+    displayCount: pois.length,
+    coordinateSystem: COORDINATE_SYSTEMS.GCJ02,
+    retrievedAt: new Date().toISOString(),
   });
 }
 
@@ -243,97 +328,81 @@ async function handleNavigation(reqUrl, res) {
 }
 
 async function handleNearbyMetro(reqUrl, res) {
-  requireAmapKey();
-
   const lng = reqUrl.searchParams.get("lng");
   const lat = reqUrl.searchParams.get("lat");
-  const radius = clampNumber(reqUrl.searchParams.get("radius"), 1000, 50000, 20000);
+  const radius = clampNumber(reqUrl.searchParams.get("radius"), 1000, 20000, 20000);
+  const limit = clampNumber(reqUrl.searchParams.get("limit"), 1, 10, 10);
   const debugCity = normalizeAmapName(reqUrl.searchParams.get("debugCity") || "");
   if (!isLngLat(lng, lat)) {
     return sendJson(res, { error: "当前基准点坐标无效" }, 400);
   }
 
-  let location;
-  try {
-    location = await reverseGeocode(lng, lat);
-  } catch (error) {
-    console.warn("Metro reverse geocode failed", error.message || error);
-    location = { province: "", city: "", provinceSlug: "", citySlug: "" };
-  }
-
-  const city = debugCity || location.city;
   const center = { longitude: Number(lng), latitude: Number(lat) };
-  const candidateEntries = getMetroEntriesWithLineFiles();
-  if (!candidateEntries.length) {
+  if (getRegionMode(reqUrl) === "overseas") {
+    const countryCode = normalizeCountryCode(reqUrl.searchParams.get("countryCode"));
+    if (!countryCode) return sendJson(res, { error: "海外查询国家代码无效" }, 400);
+    if (normalizeText(reqUrl.searchParams.get("coordinateSystem")) !== COORDINATE_SYSTEMS.WGS84) {
+      return sendJson(res, { error: "海外查询必须使用 WGS84 坐标" }, 400);
+    }
+    const result = await globalPoiService.querySubway({
+      center,
+      radius,
+      limit,
+      countryCode,
+    });
+    const stations = result.places.map((station) => ({
+      ...station,
+      toilet: 2,
+      lineId: "overseas_subway",
+      lineName: "地铁站",
+      lineColor: "#F59E0B",
+      distance: station.distanceMeters,
+    }));
+    logQueryDiagnostic("metro", "overseas", result, {
+      lng: Number(lng),
+      lat: Number(lat),
+      radius,
+      countryCode,
+      cityId: normalizeText(reqUrl.searchParams.get("cityId")),
+    });
     return sendJson(res, {
-      city,
-      hasMetro: false,
-      location,
+      city: normalizeText(reqUrl.searchParams.get("cityId")),
+      hasMetro: stations.length > 0,
+      location: { countryCode: normalizeCountryCode(reqUrl.searchParams.get("countryCode")) },
       radius,
       lines: [],
-      stations: [],
+      stations,
+      ...withoutPlaces(result),
     });
   }
 
-  const nearbyLines = [];
-  const nearbyStations = [];
-
-  for (const entry of candidateEntries) {
-    const lines = readMetroLinesByEntry(entry);
-    if (!lines.length) continue;
-
-    let stationIndex;
-    try {
-      stationIndex = await getCityMetroStationIndex(entry.city);
-    } catch (error) {
-      console.warn("Metro station lookup failed", entry.city, error.message || error);
-      continue;
-    }
-
-    const hydratedLines = hydrateMetroLines(lines, stationIndex);
-    const stations = flattenMetroStations(hydratedLines)
-      .map((station) => ({
-        ...station,
-        city: entry.city,
-        province: entry.province,
-        distance: getDistanceMeters(center, { longitude: station.longitude, latitude: station.latitude }),
-      }))
-      .filter((station) => station.distance <= radius);
-
-    if (!stations.length) continue;
-    nearbyStations.push(...stations);
-    nearbyLines.push(
-      ...hydratedLines
-        .map((line) => ({
-          ...line,
-          city: entry.city,
-          province: entry.province,
-          stations: line.stations.filter((station) =>
-            stations.some((nearbyStation) => nearbyStation.lineId === line.id && nearbyStation.name === station.name),
-          ),
-        }))
-        .filter((line) => line.stations.length),
-    );
-  }
+  requireAmapKey();
 
   try {
-    const amapStations = await searchNearbyMetroStationsFromAmap(center, radius);
-    nearbyStations.push(...amapStations);
+    const amapStations = await searchNearbyMetroStationsFromAmap(center, radius, limit);
+    const stations = dedupeMetroStations(amapStations.map(applyLocalMetroStatus))
+      .sort((left, right) => left.distance - right.distance)
+      .slice(0, limit);
+    const city = debugCity || stations[0]?.city || "";
+    return sendJson(res, {
+      city,
+      hasMetro: stations.length > 0,
+      location: { province: stations[0]?.province || "", city },
+      radius,
+      lines: [],
+      stations,
+      providerUsed: "amap",
+      isFallback: false,
+      truncated: amapStations.length > limit,
+      rawCount: amapStations.length,
+      displayCount: stations.length,
+      coordinateSystem: COORDINATE_SYSTEMS.GCJ02,
+      retrievedAt: new Date().toISOString(),
+    });
   } catch (error) {
-    console.warn("Nearby AMap metro lookup failed", error.message || error);
+    console.warn("Nearby AMap metro lookup failed", safeProviderError(error, [AMAP_WEB_SERVICE_KEY]));
+    throw error;
   }
-
-  const dedupedStations = dedupeMetroStations(nearbyStations);
-  dedupedStations.sort((left, right) => left.distance - right.distance);
-
-  return sendJson(res, {
-    city,
-    hasMetro: dedupedStations.length > 0,
-    location,
-    radius,
-    lines: nearbyLines,
-    stations: dedupedStations,
-  });
 }
 
 async function geocodeAddress(address, city = "") {
@@ -371,14 +440,17 @@ async function reverseGeocode(lng, lat) {
     extensions: "base",
   });
   const component = data.regeocode?.addressComponent || {};
+  const countryName = normalizeAmapName(component.country);
   const provinceName = normalizeAmapName(component.province);
   const rawCity = Array.isArray(component.city) ? "" : component.city;
   const fallbackCity = MUNICIPALITIES.has(provinceName) ? provinceName : component.district;
   const cityName = normalizeAmapName(rawCity || fallbackCity);
 
   return {
+    country: countryName,
     province: provinceName,
     city: cityName,
+    district: normalizeAmapName(component.district),
     provinceSlug: slugifyCn(provinceName),
     citySlug: slugifyCn(cityName),
   };
@@ -455,57 +527,115 @@ function dedupeMetroStations(stations) {
   });
 }
 
-async function searchNearbyMetroStationsFromAmap(center, radius) {
+async function searchNearbyMetroStationsFromAmap(center, radius, limit = 10) {
   const pageSize = 25;
-  const maxPages = 4;
   const stations = [];
+  const data = await fetchAmap("/v3/place/around", {
+    location: `${center.longitude},${center.latitude}`,
+    keywords: "地铁站",
+    types: "150500",
+    radius: String(radius),
+    sortrule: "distance",
+    offset: String(pageSize),
+    page: "1",
+    extensions: "base",
+  });
 
-  for (let page = 1; page <= maxPages; page += 1) {
-    if (page > 1) await delay(AMAP_PAGE_DELAY_MS);
-    let data;
-    try {
-      data = await fetchAmap("/v3/place/around", {
-        location: `${center.longitude},${center.latitude}`,
-        keywords: "地铁站",
-        types: "150500",
-        radius: String(radius),
-        sortrule: "distance",
-        offset: String(pageSize),
-        page: String(page),
-        extensions: "base",
-      });
-    } catch (error) {
-      if (stations.length > 0 && isAmapRateLimit(error)) break;
-      throw error;
-    }
-
-    const pois = Array.isArray(data.pois) ? data.pois : [];
-    pois.forEach((poi) => {
-      if (!poi.name || !poi.location) return;
-      const [lng, lat] = splitLngLat(poi.location);
-      if (!isLngLat(lng, lat)) return;
-      const longitude = Number(lng);
-      const latitude = Number(lat);
-      const distance = Number(poi.distance);
-      stations.push({
-        name: normalizeAmapStationDisplayName(poi.name),
-        toilet: 2,
-        longitude,
-        latitude,
-        lineId: "amap_nearby_metro",
-        lineName: "附近地铁站",
-        lineColor: "#9aa3a0",
-        city: normalizeAmapName(poi.cityname || ""),
-        province: normalizeAmapName(poi.pname || ""),
-        distance: Number.isFinite(distance) ? distance : getDistanceMeters(center, { longitude, latitude }),
-        source: "amap",
-      });
+  const pois = Array.isArray(data.pois) ? data.pois : [];
+  pois.forEach((poi) => {
+    if (!poi.name || !poi.location) return;
+    const [lng, lat] = splitLngLat(poi.location);
+    if (!isLngLat(lng, lat)) return;
+    const longitude = Number(lng);
+    const latitude = Number(lat);
+    const distance = Number(poi.distance);
+    stations.push({
+      id: poi.id || `${longitude},${latitude}`,
+      sourceId: poi.id || `${longitude},${latitude}`,
+      name: normalizeAmapStationDisplayName(poi.name),
+      toilet: 2,
+      longitude,
+      latitude,
+      lineId: "amap_nearby_metro",
+      lineName: "附近地铁站",
+      lineColor: "#F59E0B",
+      city: normalizeAmapName(poi.cityname || ""),
+      province: normalizeAmapName(poi.pname || ""),
+      distance: Number.isFinite(distance) ? distance : getDistanceMeters(center, { longitude, latitude }),
+      distanceMeters: Number.isFinite(distance) ? distance : getDistanceMeters(center, { longitude, latitude }),
+      source: "amap",
+      providerUsed: "amap",
+      coordinateSystem: COORDINATE_SYSTEMS.GCJ02,
+      countryCode: "cn",
+      retrievedAt: new Date().toISOString(),
     });
+  });
 
-    if (pois.length < pageSize) break;
+  return stations.sort((left, right) => left.distance - right.distance).slice(0, Math.max(limit, 10));
+}
+
+function getLocalMetroStatusIndex() {
+  if (localMetroStatusCache) return localMetroStatusCache;
+  const byCity = new Map();
+  const byUniqueName = new Map();
+  const duplicateNames = new Set();
+
+  for (const entry of getMetroEntriesWithLineFiles()) {
+    const cityKey = normalizeAmapName(entry.city);
+    const cityStations = byCity.get(cityKey) || new Map();
+    for (const line of readMetroLinesByEntry(entry)) {
+      for (const station of line.stations) {
+        const nameKey = normalizeStationName(station.name);
+        if (!nameKey) continue;
+        const current = cityStations.get(nameKey);
+        const match = current || {
+          name: station.name,
+          toilet: station.toilet,
+          lineIds: [],
+          lineNames: [],
+          lineColors: [],
+        };
+        if (!match.lineIds.includes(line.id)) match.lineIds.push(line.id);
+        if (!match.lineNames.includes(line.displayName)) match.lineNames.push(line.displayName);
+        if (!match.lineColors.includes(line.color)) match.lineColors.push(line.color);
+        if (match.toilet !== station.toilet) match.toilet = 2;
+        cityStations.set(nameKey, match);
+
+        if (byUniqueName.has(nameKey)) duplicateNames.add(nameKey);
+        else byUniqueName.set(nameKey, match);
+      }
+    }
+    byCity.set(cityKey, cityStations);
   }
 
-  return stations;
+  for (const name of duplicateNames) byUniqueName.delete(name);
+  localMetroStatusCache = { byCity, byUniqueName };
+  return localMetroStatusCache;
+}
+
+function applyLocalMetroStatus(station) {
+  const index = getLocalMetroStatusIndex();
+  const nameKey = normalizeStationName(station.name);
+  const cityKey = normalizeAmapName(station.city);
+  const match = index.byCity.get(cityKey)?.get(nameKey) || index.byUniqueName.get(nameKey);
+  if (!match) return station;
+  return {
+    ...station,
+    name: match.name || station.name,
+    toilet: match.toilet,
+    lineId: match.lineIds.join(",") || station.lineId,
+    lineName: match.lineNames.join(" / ") || station.lineName,
+    lineColor: match.lineColors[0] || station.lineColor,
+  };
+}
+
+function isMainlandAmapLocation(location) {
+  const country = normalizeAmapName(location.country);
+  const province = normalizeAmapName(location.province);
+  const city = normalizeAmapName(location.city);
+  if (/香港|澳门|台湾/.test(`${province}${city}`)) return false;
+  if (country && !/中国|中华人民共和国|china/i.test(country)) return false;
+  return Boolean(province || city);
 }
 
 function hydrateMetroLines(lines, stationIndex) {
@@ -609,6 +739,9 @@ function normalizePoi(poi) {
 
   return {
     id: poi.id || "",
+    sourceId: poi.id || "",
+    source: "amap",
+    providerUsed: "amap",
     name: poi.name || "地点",
     address: normalizeText(poi.address),
     cityName: normalizeAmapName(poi.cityname),
@@ -618,6 +751,9 @@ function normalizePoi(poi) {
     tel: normalizeText(poi.tel),
     longitude,
     latitude,
+    coordinateSystem: COORDINATE_SYSTEMS.GCJ02,
+    countryCode: "cn",
+    retrievedAt: new Date().toISOString(),
     location: {
       lng: longitude,
       lat: latitude,
@@ -715,6 +851,46 @@ function clampNumber(value, min, max, fallback) {
   return Math.min(max, Math.max(min, number));
 }
 
+function getRegionMode(reqUrl) {
+  const value = normalizeText(reqUrl.searchParams.get("region") || reqUrl.searchParams.get("regionMode")).toLowerCase();
+  return value === "overseas" ? "overseas" : "mainland";
+}
+
+function isGlobalReverseRequest(reqUrl) {
+  const value = normalizeText(reqUrl.searchParams.get("region") || reqUrl.searchParams.get("scope")).toLowerCase();
+  return value === "global" || value === "overseas";
+}
+
+function normalizeCountryCode(value) {
+  const countryCode = normalizeText(value).trim().toLowerCase();
+  if (!/^[a-z]{2}$/.test(countryCode)) return "";
+  return countryCode;
+}
+
+function withoutPlaces(result) {
+  const { places: _places, ...metadata } = result;
+  return metadata;
+}
+
+function logQueryDiagnostic(requestType, regionMode, result, request = {}) {
+  console.info("POI query", {
+    requestType,
+    regionMode,
+    providerUsed: result.providerUsed,
+    isFallback: Boolean(result.isFallback),
+    rawCount: Number(result.rawCount || 0),
+    displayCount: Number(result.displayCount || result.places?.length || 0),
+    truncated: Boolean(result.truncated),
+    coordinateSystem: result.coordinateSystem,
+    durationMs: Number(result.durationMs || 0),
+    request: {
+      ...request,
+      lng: request.lng === undefined ? undefined : Number(Number(request.lng).toFixed(5)),
+      lat: request.lat === undefined ? undefined : Number(Number(request.lat).toFixed(5)),
+    },
+  });
+}
+
 function isAmapRateLimit(error) {
   return error.infocode === "10021" || /LIMIT|QPS/i.test(error.message || "");
 }
@@ -730,6 +906,10 @@ function getClientErrorMessage(error) {
   if (error?.infocode === "20803" || error?.message === "OVER_DIRECTION_RANGE") {
     return "步行路线距离过远，无法规划。请先选定更近的基准点，或改用系统地图导航。";
   }
+  if (error?.code === "ALL_PROVIDERS_FAILED" || error?.code === "PROVIDER_NOT_CONFIGURED") {
+    return error.message;
+  }
+  if (error?.provider && error?.code) return "第三方地点服务暂时不可用，请稍后重试";
   return error?.message || "服务器内部错误";
 }
 

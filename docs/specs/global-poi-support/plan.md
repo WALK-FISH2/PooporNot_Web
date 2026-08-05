@@ -1,6 +1,6 @@
 # 全球厕所与地铁支持实施计划
 
-- 状态：Draft（代码对照与冲突确认已完成，待实施）
+- 状态：Draft（实施完成，等待微信真机验收与发布决策）
 - 规格：`spec.md`
 - 验收：`acceptance.md`
 - ADR：`../../adr/0001-global-poi-and-coordinate-strategy.md`
@@ -78,15 +78,13 @@ Codex 首先输出一份代码对照结果，不得直接实施。
 拉了么后端统一 API
 ├─ 国内现有服务适配
 ├─ Geoapify Geocoding 适配
-├─ Overpass POI 适配
-├─ Geoapify Places 兜底适配
+├─ Geoapify Places 适配
 ├─ 规范化与去重
 └─ 距离计算、排序和截断
         ↓
 第三方服务
 ├─ 高德（国内现有）
-├─ Overpass（海外 POI 主接口）
-└─ Geoapify（海外地理编码与 POI 兜底）
+└─ Geoapify（海外地理编码与 POI）
 ```
 
 ## 4. 统一领域模型
@@ -102,7 +100,7 @@ type SearchCenterSource =
   | "place-search"
   | "map-selection";
 
-type Provider = "amap" | "overpass" | "geoapify" | "local";
+type Provider = "amap" | "geoapify" | "local";
 
 interface SearchCenter {
   latitude: number;
@@ -178,42 +176,11 @@ interface OverseasCityConfig {
 - 外部响应多于 10 条不等于多次请求，配额优化重点是取消自动请求和多城市分页扫描；
 - 无法匹配本地状态的国内站点使用 `toilet: 2`。
 
-### 6.1 Overpass
-
-逻辑配置：
-
-```env
-OVERPASS_API_URL=https://overpass-api.de/api/interpreter
-```
-
-要求：
-
-- 使用后端请求；
-- POST 提交 Overpass QL；
-- 设置明确超时，初始建议 8 秒，可经测试调整；
-- 为请求提供可识别的应用 User-Agent；
-- 处理超时、429、5xx、网络错误和非法响应；
-- 不需要 API Key；
-- 不做多个公共实例轮询；
-- 失败后快速进入 Geoapify 兜底。
-
-厕所查询逻辑：
-
-```overpass
-[out:json][timeout:20];
-(
-  nwr["amenity"="toilets"](around:RADIUS,LAT,LNG);
-);
-out center tags;
-```
-
-地铁查询应覆盖站点级常见标签组合，但不得查询 `railway=subway_entrance` 作为站点结果。具体组合在实施时根据 OSM 数据测试确定，并在代码中集中维护。
-
-### 6.2 Geoapify Geocoding
+### 6.1 Geoapify Geocoding
 
 用途：
 
-- Reverse Geocoding：首次当前位置识别国家和城市；
+- Reverse Geocoding：仅在海外候选位置识别国家和城市；
 - Forward Geocoding：其他地区模式下的当前城市内地点搜索。
 
 要求：
@@ -225,12 +192,12 @@ out center tags;
 - 结果进入客户端前统一格式；
 - Geoapify 失败不得破坏国内现有搜索。
 
-### 6.3 Geoapify Places
+### 6.2 Geoapify Places
 
 用途：
 
-- Overpass 海外厕所查询失败兜底；
-- Overpass 海外地铁查询失败兜底。
+- 海外厕所直接查询；
+- 海外地铁直接查询。
 
 分类：
 
@@ -269,7 +236,7 @@ out center tags;
 
 - 规范化地点数组；
 - 实际供应商；
-- 是否兜底；
+- 是否截断，以及兼容字段 `isFallback`；
 - 是否被数量上限截断；
 - 原始数量和展示数量；
 - 可面向用户显示的提示代码；
@@ -281,14 +248,15 @@ out center tags;
 
 ```text
 获取当前位置
-→ Geoapify Reverse Geocoding 识别地区
+→ GCJ-02 国内候选范围先用高德确认
+→ 海外才获取 WGS84 并调用 Geoapify Reverse Geocoding
 → 设置地区模式与城市
 → 设置当前位置为默认查询中心
 → 自动查询当前半径厕所
 → 不查地铁
 ```
 
-必须先确认现有国内定位流程，再决定是否需要额外获取 WGS84 或 GCJ-02。
+国内正常启动不调用 Geoapify；海外保持 WGS84。
 
 ### 8.2 切换地区/城市
 
@@ -345,7 +313,7 @@ out center tags;
 点击现有专用按钮
 → 使用当前查询中心
 → 国内：按需高德周边查询并匹配本地状态
-→ 海外：Overpass，失败后 Geoapify
+→ 海外：Geoapify Places
 → 后端筛选 20 km 内最近 10 个站点
 → 保留厕所 marker，替换并显示地铁 marker
 ```
@@ -407,7 +375,6 @@ out center tags;
 
 ### 11.2 厕所
 
-- Overpass：最近 200 个；
 - Geoapify：最近 100 个；
 - 超过阈值必须返回截断提示。
 
@@ -445,10 +412,8 @@ out center tags;
 ### 13.1 厕所/地铁
 
 ```text
-Overpass
+Geoapify Places
 → 超时/429/网络/5xx/非法数据
-→ Geoapify Places
-→ 仍失败
 → 用户友好错误 + 诊断日志
 ```
 
@@ -493,7 +458,6 @@ Overpass
 - Geoapify Places API：`https://apidocs.geoapify.com/docs/places/`
 - Geoapify Forward Geocoding：`https://apidocs.geoapify.com/docs/geocoding/forward-geocoding/`
 - Geoapify Reverse Geocoding：`https://apidocs.geoapify.com/docs/geocoding/reverse-geocoding/`
-- Overpass API 文档：`https://dev.overpass-api.de/overpass-doc/en/`
-- Overpass 公共实例使用说明：`https://dev.overpass-api.de/overpass-doc/en/preface/commons.html`
+- Geoapify Places API 文档：`https://apidocs.geoapify.com/docs/places/`
 - 腾讯位置服务坐标 FAQ：`https://lbs.qq.com/faq/latlngFaq`
 - 腾讯海外 WebService 概览：`https://lbs.qq.com/service/webService/webServiceGuide/Overseas/Overview`

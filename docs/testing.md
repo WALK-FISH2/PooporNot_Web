@@ -2,181 +2,149 @@
 
 状态：Active
 
-## 1. 当前测试现状
+## 1. 自动化检查
 
-当前仓库没有单元测试、集成测试、端到端测试文件或 CI 配置。
-
-现有自动检查只有：
+### 1.1 Node 语法
 
 ```powershell
 npm run check
 ```
 
-它执行：
+检查 `server.js`、`app.js` 和 `lib/` 的后端模块。
 
-```text
-node --check server.js
-node --check app.js
-```
-
-微信小程序依赖开发者工具编译和预览；项目没有独立 `typescript` 依赖，因此当前不能在根目录直接运行统一 `tsc`。Android 可通过 Gradle 构建验证，但要求 JDK 17 和可用 Android SDK。
-
-本文件定义当前应执行的最低人工测试，并列出后续自动化目标。
-
-## 2. 分层策略
-
-### 2.1 静态检查
-
-- Node 语法检查。
-- 所有地铁 JSON 可解析。
-- `toilet` 只能为 `0`、`1`、`2`。
-- 文档不得包含本机绝对路径和真实密钥。
-- 小程序不得重新引用 `/api/navigation` 或显示“路线”。
-
-### 2.2 API 冒烟测试
-
-启动后端后至少检查：
+### 1.2 Node 单元测试
 
 ```powershell
-Invoke-RestMethod 'http://127.0.0.1:5174/api/health'
-Invoke-RestMethod 'http://127.0.0.1:5174/api/location/reverse?lng=120.31191&lat=31.49117'
-Invoke-RestMethod 'http://127.0.0.1:5174/api/places?city=无锡&keywords=三阳广场&limit=10'
-Invoke-RestMethod 'http://127.0.0.1:5174/api/toilets?lng=120.31191&lat=31.49117&radius=500&limit=100'
-Invoke-RestMethod 'http://127.0.0.1:5174/api/metro/nearby?lng=120.31191&lat=31.49117&radius=20000'
+npm test
 ```
 
-坐标仅用于开发冒烟测试。实际端口以 `.env` 为准。
+当前 `test/` 有 14 个测试，覆盖：
 
-### 2.3 客户端人工验收
+- Geoapify 海外 POI 规范化与 WGS84 不转换；
+- 距离过滤、排序、上限和地铁保守去重；
+- Geoapify 厕所/地铁分类、半径和数量参数；
+- 429 类型化错误；
+- Geoapify 城市硬过滤参数和后端 Key 使用；
+- 全球逆地理空国家不会被误判为海外；
+- Geoapify POI 直连和元数据；
+- 厕所 100 条上限；
+- 地铁最近 10 站；
+- 日志中的 API Key 和已知密钥脱敏。
 
-在网页、微信开发者工具、微信真机和 Android 真机分别验证关键工作流。地图、定位、外部应用唤起和平台域名校验不能只依赖模拟器。
+测试使用 mock，不消耗地图服务配额。
 
-## 3. 后端测试清单
+### 1.3 小程序类型检查
 
-### 正常路径
+项目未固定安装 TypeScript，可使用：
 
-- [ ] `/api/health` 不依赖高德 Key。
-- [ ] `/api/config` 不返回 `AMAP_WEB_SERVICE_KEY`。
-- [ ] `/api/places?mode=city` 能返回城市基准点。
-- [ ] 地点搜索无结果时能尝试地理编码回退。
-- [ ] 厕所结果按距离、分页和 `limit` 返回。
-- [ ] 地铁结果按半径跨城市过滤并按距离排序。
-- [ ] 网页和 Android 路线返回距离、时长、点和步骤。
+```powershell
+npx --yes -p typescript@5.4.5 tsc --noEmit -p WhereToPoop/tsconfig.json
+```
 
-### 异常路径
+`skipLibCheck` 只跳过旧版微信声明文件与 TypeScript 5.4 的兼容错误，项目自身代码仍参与检查。
 
-- [ ] 缺少或非法坐标返回 400 JSON，而不是进程退出。
-- [ ] 缺少 `AMAP_WEB_SERVICE_KEY` 返回明确错误。
-- [ ] 高德配额或业务错误映射为 502。
-- [ ] `OVER_DIRECTION_RANGE` 返回 400 和可读说明。
-- [ ] 厕所后续分页限流且已有结果时返回 `partial: true`。
-- [ ] 不存在静态文件返回 404。
-- [ ] `OPTIONS` 返回 204。
-
-### 性能
-
-- [ ] 记录 `/api/metro/nearby` 冷缓存与热缓存耗时。
-- [ ] 确认同一城市热缓存不再重复拉取城市站点索引。
-- [ ] 厕所 `limit=100` 最多触发 4 页请求。
-- [ ] 连续请求不会造成 Node 未捕获异常退出。
-
-## 4. 网页测试矩阵
-
-| 场景 | 预期 |
-| --- | --- |
-| 首次允许定位 | 基准点使用当前位置，地铁标记加载 |
-| 定位失败 | 显示错误，并允许城市/地点流程 |
-| 手动切换城市 | 地图到城市中心，不自动冒充用户位置 |
-| 搜索地点 | 候选使用地点标记，选中后成为基准点 |
-| 查厕所 | 结果、标记、距离和半径一致 |
-| 点击厕所标记 | 左侧显示正确详情和路线按钮 |
-| 规划路线 | 终点是当前选中厕所或地铁站 |
-| 深浅色 | UI 和高德地图样式同时变化 |
-| 窄屏 | 结果列表可滚动，控件不溢出 |
-
-至少覆盖 Chromium 系浏览器；Safari、Firefox 和移动浏览器兼容范围待确认。
-
-## 5. 微信小程序测试矩阵
-
-| 场景 | 开发者工具 | Android 微信 | iOS 微信 |
-| --- | --- | --- | --- |
-| 首次授权定位并自动查厕所 | 必测 | 必测 | 必测 |
-| 拒绝定位后选城市和地点 | 必测 | 必测 | 必测 |
-| 半径变化自动查询 | 必测 | 必测 | 必测 |
-| 最近 10 个地铁站 | 必测 | 必测 | 必测 |
-| 厕所/地铁 `wx.openLocation` | 参考 | 必测 | 必测 |
-| HTTPS 合法域名校验 | 必测 | 必测 | 必测 |
-| 深浅色 UI 与地图样式 | 必测 | 必测 | 必测 |
-| 分享好友与朋友圈 | 参考 | 必测 | 必测 |
-| `UpdateManager` | 难以稳定模拟 | 发布后验证 | 发布后验证 |
-
-额外断言：
-
-- [ ] 结果卡片和详情中没有“路线”。
-- [ ] 不产生 `/api/navigation` 请求。
-- [ ] 城市按钮显示逆地理编码结果，不固定为无锡。
-- [ ] 导航目标经纬度与选中标记一致。
-- [ ] 腾讯样式为空时不传 `style0`。
-
-## 6. Android 测试矩阵
-
-最低覆盖 Android API 24 和目标 API 35 的代表设备，实际设备集合待确认。
-
-- [ ] 缺少 Key 时提示配置，不崩溃。
-- [ ] 首次授权、拒绝权限、再次定位。
-- [ ] 定位成功后自动逆地理编码、加载地铁和厕所。
-- [ ] 城市字母索引与推荐城市。
-- [ ] 地点搜索、选定基准点和厕所查询。
-- [ ] 300 m、500 m、1 km、3 km。
-- [ ] 地铁状态绿/红/橙和最近 10 站。
-- [ ] 后端步行路线目标正确。
-- [ ] 安装高德时打开高德；未安装时系统 `geo:` 兜底。
-- [ ] 浅色/深色主题与高德日/夜地图。
-- [ ] HTTPS 构建；正式版不依赖明文 HTTP。
-
-构建检查：
+### 1.4 Android 构建
 
 ```powershell
 Set-Location WhereToPoop_apk
 .\gradlew.bat assembleDebug
 ```
 
-## 7. 地铁数据检查
+要求 JDK 17 和 Android SDK 35。2026-08-05 本机仅有 JDK 14，构建在 Android Gradle Plugin 前置检查处停止，未进入本项目源码编译；这不等于 Android 回归失败，也不等于已通过。
 
-人工新增线路前后检查：
+## 2. 后端冒烟
 
-- JSON 可解析，`stations` 是数组。
-- 每条站点有非空 `name`。
-- `toilet` 值合法。
-- 同一线路内站名不重复。
-- `id`、`displayName`、`color` 与真实线路一致。
-- 跨市镜像线路保持同步。
-- 重启后端后，人工站点能匹配高德坐标。
-- 人工站点与高德兜底站点去重正常。
+启动后端后，至少验证：
 
-## 8. 文档一致性检查
+```powershell
+Invoke-RestMethod 'http://127.0.0.1:5174/api/health'
+Invoke-RestMethod 'http://127.0.0.1:5174/api/location/reverse?lng=120.31191&lat=31.49117'
+Invoke-RestMethod 'http://127.0.0.1:5174/api/places?city=无锡&keywords=三阳广场&limit=10'
+Invoke-RestMethod 'http://127.0.0.1:5174/api/toilets?lng=120.31191&lat=31.49117&radius=500&limit=100'
+Invoke-RestMethod 'http://127.0.0.1:5174/api/metro/nearby?lng=120.31191&lat=31.49117&radius=20000&limit=10'
+Invoke-RestMethod 'http://127.0.0.1:5174/api/global/cities'
+Invoke-RestMethod 'http://127.0.0.1:5174/api/location/reverse?scope=global&coordinateSystem=WGS84&lng=103.8519&lat=1.2899'
+```
 
-- 所有正式文档有 `Draft`、`Active` 或 `Deprecated` 状态。
-- 文档中的仓库路径为相对路径。
-- `docs/api.md` 与 `server.js` 路由一致。
-- `docs/configuration.md` 与实际默认值一致。
-- `docs/metro-data.md` 的文件数、站点数和状态数与 JSON 一致。
-- `CHANGELOG.md` 保留历史并包含本次修改。
+海外 POI 冒烟需配置开发用 Geoapify Key，不要把 Key 放入命令、日志或文档。还应测试非法海外 `coordinateSystem=GCJ02` 返回 400。
 
-## 9. 待补自动化
+## 3. 2026-08-05 实施验证记录
 
-优先级建议：
+自动化结果：
 
-1. `server.js` 参数、错误映射和 POI 标准化单元测试。
-2. 使用固定响应模拟高德的 API 集成测试，避免消耗真实配额。
-3. 地铁 JSON schema 和跨市重复线路一致性检查。
-4. 小程序 TypeScript 类型检查和关键方法测试。
-5. Android ViewModel/业务逻辑拆分后的单元测试。
-6. CI 中运行 Node、数据和 Android 构建检查。
+- `npm run check`：通过。
+- `npm test`：14/14 通过。
+- 小程序 TypeScript 5.4 类型检查：通过。
+- `git diff --check`：通过；Windows 仅有行尾转换提示。
+- 小程序源码 Key 扫描：未发现 Geoapify Key。
+- Android `assembleDebug`：因本机 JDK 14、要求 JDK 17而未运行完成。
+- 微信开发者工具 CLI 预览：等待已打开 IDE 时未完成，已终止；不能代替真机验收。
 
-## 10. 待确认
+国内 API 回归：无锡地点返回高德/GCJ-02，厕所返回高德结果，地铁一次周边请求返回最近 10 站并成功匹配本地状态。南京全局逆地理能识别 `cn/mainland`，随后国内链路仍使用 GCJ-02。
 
-- CI 平台、执行环境和分支保护规则。
-- 支持的浏览器、Android 设备和微信基础库范围。
-- 外部 API 测试账号、配额和 mock 策略负责人。
-- 发布门禁需要达到的自动化覆盖率。
+切换到 Geoapify 直连前的六城后端测试快照如下，仅作为数据量参考；海外地铁中的 Overpass 结果已不代表当前活动链路：
+
+| 城市 | 城市内搜索 | 厕所 | 地铁 | 坐标 |
+| --- | ---: | --- | --- | --- |
+| 新加坡 | 10 | 12，Geoapify | 待按直连链路重测 | WGS84 |
+| 莫斯科 | 10 | 9，Geoapify | 待按直连链路重测 | WGS84 |
+| 东京 | 10 | 21，Geoapify | 待按直连链路重测 | WGS84 |
+| 伦敦 | 2 | 10，Geoapify | 待按直连链路重测 | WGS84 |
+| 纽约 | 3 | 1，Geoapify | 待按直连链路重测 | WGS84 |
+| 悉尼 | 1 | 42，Geoapify | 待按直连链路重测 | WGS84 |
+
+六城厕所当时已经实际来自 Geoapify，因此可作为当前厕所数据量的历史参考。Geoapify 直连后的六城地铁与端到端耗时仍需重新测试；上述数量不是数据完备性或性能承诺。
+
+2026-08-05 Geoapify 直连后使用公开城市中心做单次本地后端冒烟：无锡高德逆地理约 186 ms；新加坡 500 m Geoapify 厕所约 1.45 s、返回 15 条；新加坡 20 km Geoapify 地铁约 0.94 s、返回 9 条。该结果只证明活动链路不再等待 Overpass，不构成生产 SLA；六城多轮、弱网和真机仍待验收。
+
+## 4. 微信小程序真机门禁
+
+开发者工具不能替代以下 Android 微信与 iOS 微信测试：
+
+- [ ] 首次允许定位：当前位置成为查询中心、自动查厕所、不查地铁。
+- [ ] 拒绝定位：仍能选城市、搜地点和长按选点。
+- [ ] 国内文字地点仍受当前城市限制，选择后不自动查询。
+- [ ] 国内/海外长按只出现临时点；普通点击、拖动和缩放不选点、不请求。
+- [ ] 点击“选这里”清除旧结果但不查询；随后两个按钮都使用选中点。
+- [ ] 已有中心时切换半径只刷新厕所。
+- [ ] 城市切换只移动视口并清空中心；按钮与半径操作只提示。
+- [ ] 地铁只由专用按钮请求 20 km 最近 10 站。
+- [ ] 厕所刷新保留地铁 marker，地铁刷新保留厕所 marker。
+- [ ] 六城 marker 与底图基本一致，海外导航无系统性偏移。
+- [ ] `wx.openLocation` 国内传 GCJ-02、海外传 WGS84，并打开正确目的地。
+- [ ] Geoapify 超时、限流和无结果不会清空有效地图状态。
+- [ ] HTTPS 合法域名、分享、更新提示和深浅色样式正常。
+
+完整逐城记录填写 `docs/specs/global-poi-support/acceptance.md`。
+
+## 5. 网页回归
+
+- [ ] 首次定位仍使用当前位置，现有自动地铁行为未被海外小程序改造改变。
+- [ ] 城市、地点、厕所、marker 详情和步行路线正常。
+- [ ] `/api/navigation` 目标与选中 POI 一致。
+- [ ] 深浅色和窄屏结果滚动正常。
+- [ ] 网页请求不需要 `region=overseas`。
+
+## 6. Android 回归
+
+- [ ] JDK 17 环境 `assembleDebug` 通过。
+- [ ] 国内定位、城市、地点、厕所和地铁正常。
+- [ ] 后端路线和外部地图导航目标正确。
+- [ ] 未安装高德时系统 `geo:` 兜底正常。
+- [ ] 生产构建使用 HTTPS，不依赖旧 HTTP IP。
+- [ ] Android 请求不需要海外参数。
+
+## 7. 数据与文档检查
+
+- 所有 `data/metro` JSON 可解析，站点状态仅 `0/1/2`。
+- `data/global/cities.json` ID、国家、WGS84 中心和边界完整。
+- 正式文档只使用相对路径，不包含真实 Key。
+- `docs/api.md`、`.env.example`、客户端类型与代码一致。
+- 修改历史追加到 `CHANGELOG.md`。
+
+## 8. 已知测试缺口
+
+- 没有真实小程序端到端自动化、CI、Android JDK 17 构建环境或 iOS 自动化。
+- Geoapify 直连后的六城实际响应时间、配额消耗与错误路径需要在真机和生产网络再次实测。
+- 六城外当前位置/地图选点已在代码中支持，但没有全球城市文字搜索列表，也未完成真机抽样。
+- 生产反向代理、限流、日志和证书不在仓库自动测试范围内。

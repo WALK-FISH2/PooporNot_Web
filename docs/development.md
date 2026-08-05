@@ -9,13 +9,13 @@
 ### 后端与网页
 
 - Node.js 18 或更高版本，原因是 `server.js` 使用全局 `fetch`。
-- 有效的高德 JS API Key、安全密钥和 Web Service Key。
+- 有效的高德 JS API Key、安全密钥和 Web Service Key；开发海外功能还需要 Geoapify Key。
 
 根 `package.json` 当前没有第三方依赖，因此不需要安装运行时包。
 
 ### 微信小程序
 
-- 微信开发者工具，基础库与项目配置当前为 `3.13.0`。
+- 微信开发者工具，基础库与项目配置当前为 `3.16.2`。
 - 有权访问 `WhereToPoop/project.config.json` 中 AppID 的开发者账号。
 - 真机测试需要可访问的 HTTPS 后端，或开发阶段可访问的局域网后端。
 
@@ -30,12 +30,15 @@
 
 ### 2.1 创建本地配置
 
-在根目录创建 `.env`，不要把现有 `.env.example` 中的非占位值直接当作安全密钥：
+从纯占位的 `.env.example` 创建根目录 `.env`：
 
 ```env
 AMAP_JS_KEY=replace-with-your-key
 AMAP_SECURITY_JS_CODE=replace-with-your-code
 AMAP_WEB_SERVICE_KEY=replace-with-your-key
+GEOAPIFY_API_KEY=replace-with-your-key
+GEOAPIFY_BASE_URL=https://api.geoapify.com
+GEOAPIFY_TIMEOUT_MS=4000
 PORT=5174
 AMAP_PAGE_DELAY_MS=260
 ```
@@ -65,9 +68,11 @@ http://127.0.0.1:5174/api/health
 
 ```powershell
 npm run check
+npm test
+npx --yes -p typescript@5.4.5 tsc --noEmit -p WhereToPoop/tsconfig.json
 ```
 
-该命令只对 `server.js` 和 `app.js` 执行 Node 语法检查，不是自动化业务测试。
+`npm run check` 检查 Node 模块语法，`npm test` 运行后端单元测试；第三条检查小程序项目类型。
 
 ## 3. 微信小程序开发
 
@@ -101,7 +106,7 @@ export const API_BASE_URL = "https://pp.nuanzhualife.cn";
 
 ### 3.3 地图夜间样式
 
-界面夜间模式无需额外配置。若要让腾讯地图底图同时变暗，需要在腾讯位置服务控制台创建个性化样式，然后填写：
+界面夜间模式无需额外配置。当前地图保持微信原生默认底图，以下字段只是预留，尚未接入页面：
 
 ```ts
 export const TENCENT_MAP_SUBKEY = "...";
@@ -114,10 +119,11 @@ export const TENCENT_MAP_STYLE_DARK = "...";
 ### 3.4 验证重点
 
 - 首次授权定位后自动查询 500 m 内厕所。
-- 拒绝定位后能选择城市和地点。
-- 改变半径后自动查询。
+- 首次定位不自动查地铁；拒绝定位后能选择城市、地点或长按选点。
+- 文字地点和“选这里”只建立查询中心；改变半径后仅自动查询厕所。
 - 厕所和地铁站只显示“导航”，没有“路线”。
-- 地铁按钮列出最近 10 站。
+- 地铁按钮查询 20 km 内最近 10 站，并与已有厕所 marker 共存。
+- 六座海外城市的搜索硬边界、WGS84 marker 和导航。
 - 分享和版本更新提示可用。
 
 ## 4. Android 开发
@@ -163,9 +169,8 @@ WhereToPoop_apk/app/build/outputs/apk/debug/app-debug.apk
 2. 在对应省市目录新增或修改 `line_*.json`。
 3. 不写坐标，只写站名和 `toilet`。
 4. 用 JSON 解析器校验所有文件。
-5. 重启后端清空城市地铁站内存缓存。
-6. 在目标城市和边界位置测试 `/api/metro/nearby`。
-7. 更新数据盘点与 `CHANGELOG.md`。
+5. 在目标城市和边界位置测试 `/api/metro/nearby` 的一次周边查询与状态匹配。
+6. 更新数据盘点与 `CHANGELOG.md`。
 
 ## 6. 常见问题
 
@@ -179,7 +184,7 @@ WhereToPoop_apk/app/build/outputs/apk/debug/app-debug.apk
 
 ### 高德返回 502 或 QPS 错误
 
-查看响应中的高德错误信息。厕所查询默认最多分页 4 次；地铁首次加载还会建立城市索引。不要通过快速重复刷新放大配额消耗。
+查看响应中的高德错误信息。国内厕所查询默认最多分页 4 次；国内地铁按钮每次通常只执行一次周边查询。不要通过快速重复刷新放大配额消耗。
 
 ### 只返回 25 个厕所
 
@@ -187,11 +192,11 @@ WhereToPoop_apk/app/build/outputs/apk/debug/app-debug.apk
 
 ### 地铁加载慢
 
-首次请求需要建立城市站点索引；同一进程后续会缓存。修改后端后必须重启旧进程。若持续很慢，检查高德配额和实际扫描城市数。
+当前地铁只在点击按钮后请求，不再建立全城市站点索引。若持续很慢，国内检查高德配额，海外检查 Geoapify 响应时间与配额。
 
 ### `style0` 未找到
 
-腾讯地图样式 ID 被错误设为 `0`。未配置时保持空字符串。
+腾讯地图样式 ID 被错误设为 `0`。当前页面不传 `subkey` 或 `layer-style`；预留配置保持空字符串。
 
 ### 小程序预览出现 `Unexpected token ?`
 

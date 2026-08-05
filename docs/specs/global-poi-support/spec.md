@@ -1,6 +1,6 @@
 # 全球厕所与地铁支持功能规格
 
-- 状态：Draft（代码对照与冲突确认已完成，待实施）
+- 状态：Draft（代码实现与自动化验证已完成，待微信真机验收）
 - 适用客户端：微信小程序 `WhereToPoop/`
 - 不适用客户端：网页版、Android（本轮不实现）
 - 关联 ADR：`docs/adr/0001-global-poi-and-coordinate-strategy.md`
@@ -60,7 +60,7 @@ Codex 在修改任何代码前，必须先阅读微信小程序现有实现，�
 - 修改文档以迎合实现而不说明；
 - 将“代码组织不同”误判为“需求冲突”。
 
-现有代码对照已于 2026-08-04 完成，C-01 至 C-04 冲突已于 2026-08-05 由用户确认。确认后的目标行为以本文件、`plan.md`、`tasks.md`、`acceptance.md` 和关联 ADR 的一致口径为准；当前代码在实施完成前仍保持原状。
+现有代码对照已于 2026-08-04 完成，C-01 至 C-04 冲突已于 2026-08-05 由用户确认。代码实现和自动化验证于 2026-08-05 完成；确认后的目标行为以本文件、`plan.md`、`tasks.md`、`acceptance.md` 和关联 ADR 的一致口径为准，真机未验项目以 `acceptance.md` 为准。
 
 ## 3. 经确认的国内目标基线
 
@@ -98,7 +98,7 @@ Codex 在修改任何代码前，必须先阅读微信小程序现有实现，�
 - 海外地铁站查询；
 - 国内外坐标系显式管理；
 - 海外导航坐标正确传递；
-- Overpass 主接口与 Geoapify 兜底；
+- Geoapify 海外地理编码与 POI 直连；
 - 诊断字段和可排查日志；
 - 国内功能回归测试。
 
@@ -131,7 +131,7 @@ Codex 在修改任何代码前，必须先阅读微信小程序现有实现，�
 | 模式 | 地点搜索 | 厕所 | 地铁 | 目标坐标系 |
 |---|---|---|---|---|
 | 中国大陆 | 现有国内实现 | 现有高德实现 | 现有国内实现 | GCJ-02 |
-| 其他地区 | Geoapify Geocoding | Overpass，失败后 Geoapify | Overpass，失败后 Geoapify | WGS84 |
+| 其他地区 | Geoapify Geocoding | Geoapify Places | Geoapify Places | WGS84 |
 
 ### 5.2 首批重点验证城市
 
@@ -194,14 +194,14 @@ Codex 在修改任何代码前，必须先阅读微信小程序现有实现，�
 小程序首次进入地图页时：
 
 1. 请求位置权限并获取当前位置；
-2. 通过 Geoapify Reverse Geocoding 识别国家和城市；
-3. 若在中国大陆，进入中国大陆模式，并继续沿用现有国内坐标与厕所查询流程；
-4. 若在海外，进入其他地区模式，使用 WGS84；
+2. 先获取 GCJ-02；坐标落在中国大陆候选范围时优先用高德逆地理确认城市，不请求 Geoapify；
+3. 若高德确认在中国大陆，进入中国大陆模式，并继续沿用现有国内坐标与厕所查询流程；
+4. 不在候选范围或高德确认不在中国大陆时，再获取 WGS84 并用 Geoapify Reverse Geocoding 识别国家和城市，进入其他地区模式；
 5. 将当前位置设为默认查询中心；
 6. 按当前默认半径自动查询厕所；
 7. 不自动查询地铁。
 
-实现前必须检查现有国内定位调用的 `type`、返回坐标系与腾讯地图展示方式；若需要同时获得用于国家识别的 WGS84 和用于国内业务的 GCJ-02，应在不重复弹权限提示的前提下设计最小改动方案。
+国内正常启动不得依赖 Geoapify 成功或等待其超时。海外查询中心必须使用 WGS84，国内查询中心继续使用 GCJ-02。
 
 ### 7.2 定位失败
 
@@ -311,36 +311,23 @@ Codex 在修改任何代码前，必须先阅读微信小程序现有实现，�
 
 继续使用现有高德厕所查询链路，不改变已有接口和业务体验。
 
-### 10.4 海外主数据源
+### 10.4 海外数据源
 
-使用公共 Overpass API：
-
-- 查询 `amenity=toilets`；
-- 覆盖 node、way、relation；
-- 对 way/relation 使用中心点；
-- 保留原始 OSM ID 和标签；
-- 计算查询中心到结果的直线距离；
-- 按距离从近到远排序；
-- 最多展示最近 200 个；
-- 如果实际结果超过 200 个，明确提示：`该范围内结果较多，当前显示距离最近的200个厕所`。
-
-### 10.5 Geoapify 兜底
-
-以下情况切换到 Geoapify Places API：
-
-- Overpass 超时；
-- HTTP 429；
-- 网络错误；
-- HTTP 5xx；
-- 返回无法解析或不符合约定的数据。
-
-兜底规则：
+直接使用 Geoapify Places API：
 
 - 分类使用 `amenity.toilet`；
-- 最多展示距离最近的 100 个；
-- 按真实距离重新排序；
-- 显示提示：`当前使用备用数据源，结果可能不完整`；
-- 不得把 100 个结果描述为范围内全部结果。
+- 保留 Geoapify `place_id`；
+- 计算查询中心到结果的直线距离；
+- 按距离从近到远排序；
+- 最多展示最近 100 个；
+- 不得把截断后的结果描述为范围内全部结果。
+
+### 10.5 错误与性能
+
+- 后端默认 4 秒超时；
+- 处理 HTTP 429、网络错误、HTTP 5xx 和非法响应；
+- 不在 Geoapify 之前串行调用公共 Overpass；
+- 失败时返回可理解错误并保留客户端已有有效地图状态。
 
 ### 10.6 第一版性能保护
 
@@ -406,13 +393,9 @@ Codex 在修改任何代码前，必须先阅读微信小程序现有实现，�
 
 ### 11.5 海外数据处理
 
-- 使用 Overpass 查询站点级对象；
-- 兼容常见 OSM 地铁站标签组合；
-- 避免把出入口当成独立地铁站；
-- 对 node、way、relation 提取坐标；
+- 使用 Geoapify `public_transport.subway` 查询地铁站；
 - 对同一站点的重复对象去重；
 - 换乘站尽量显示一个主要 marker；
-- Overpass 失败后由 Geoapify `public_transport.subway` 兜底；
 - 返回结果保留来源与原始 ID。
 
 ## 12. 坐标系与地图展示
@@ -434,8 +417,8 @@ Codex 在修改任何代码前，必须先阅读微信小程序现有实现，�
 interface NormalizedPlace {
   id: string;
   sourceId: string;
-  source: "amap" | "overpass" | "geoapify" | "local";
-  providerUsed: "amap" | "overpass" | "geoapify" | "local";
+  source: "amap" | "geoapify" | "local";
+  providerUsed: "amap" | "geoapify" | "local";
   name: string;
   latitude: number;
   longitude: number;
@@ -485,14 +468,13 @@ interface NormalizedPlace {
 后端环境变量至少预留：
 
 ```env
-OVERPASS_API_URL=https://overpass-api.de/api/interpreter
 GEOAPIFY_API_KEY=
 GEOAPIFY_BASE_URL=https://api.geoapify.com
+GEOAPIFY_TIMEOUT_MS=4000
 ```
 
 要求：
 
-- Overpass 公共接口不需要 API Key；
 - Geoapify Key 仅保存在后端；
 - Key 不得进入小程序包、网页前端或 Git；
 - `.env.example` 只保留变量名和非敏感默认地址；
@@ -507,11 +489,8 @@ GEOAPIFY_BASE_URL=https://api.geoapify.com
 - 定位超时；
 - 当前城市地点搜索无结果；
 - 海外搜索结果被城市边界过滤为空；
-- Overpass 超时或限流；
-- Geoapify 兜底；
-- 两个海外数据源均失败；
-- 结果超过 200 个；
-- 备用数据源最多 100 个；
+- Geoapify 超时、限流或服务异常；
+- 海外厕所结果超过 100 个；
 - 当前没有正式查询中心时点击地铁按钮；
 - 当前没有正式查询中心时点击“查厕所”或切换半径；
 - `wx.openLocation` 调用失败。
@@ -527,7 +506,7 @@ GEOAPIFY_BASE_URL=https://api.geoapify.com
 - 查询中心及坐标系；
 - 半径；
 - 实际使用供应商；
-- 是否触发兜底；
+- 是否截断；
 - 原始结果数、过滤后结果数、展示数；
 - 请求耗时；
 - 错误类型；
@@ -554,6 +533,6 @@ Codex 应在实现完成后将实际使用的数据源、配置和合规说明�
 - 地铁只由专用按钮触发，并返回查询中心 20 km 内最近 10 个站点；
 - 同一查询中心下查询地铁不清除厕所 marker，查询厕所不清除地铁 marker；
 - 地图长按选点在国内外均可用；
-- Overpass 失败时 Geoapify 可兜底；
+- Geoapify 厕所和地铁查询能在默认超时内成功或快速失败；
 - 没有未经确认的需求冲突处理；
 - 现有项目文档已由 Codex 根据实际实现完成同步。

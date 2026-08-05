@@ -2,7 +2,7 @@
 
 状态：Active
 
-一个以地图为主界面的公共厕所与地铁站厕所信息查询项目。用户可以使用当前位置，或手动选择城市和具体地点作为基准点，查找附近公共厕所并查看地铁站厕所状态。
+一个以地图为主界面的公共厕所与地铁站厕所信息查询项目。用户可以使用当前位置、文字地点或地图长按选点作为查询中心，查找附近公共厕所并按需查看地铁站厕所状态。
 
 ## 当前组成
 
@@ -25,11 +25,13 @@ docs/                              正式开发文档
 
 ## 当前功能
 
-- 定位与手动城市/地点双基准模式。
+- 定位、文字地点与地图选点查询中心（地图长按当前仅微信小程序支持）。
 - 300 m、500 m、1 km、3 km 附近厕所查询。
 - 厕所地图标记、列表、距离和详情。
-- 基准点 20 km 内跨城市地铁站查询。
+- 专用按钮查询中心 20 km 内最近 10 个地铁站。
 - 地铁厕所状态：绿色有厕所、红色无厕所、橙色不确定。
+- 微信小程序支持中国大陆与海外模式；首批海外城市为新加坡、莫斯科、东京、伦敦、纽约和悉尼。
+- 国内业务继续使用高德与 GCJ-02；小程序海外地点与 POI 使用 Geoapify 和 WGS84。
 - 网页、小程序和 Android 深浅色界面。
 - 小程序分享与新版本更新提示。
 
@@ -45,11 +47,14 @@ docs/                              正式开发文档
 AMAP_JS_KEY=replace-with-your-web-js-key
 AMAP_SECURITY_JS_CODE=replace-with-your-security-code
 AMAP_WEB_SERVICE_KEY=replace-with-your-web-service-key
+GEOAPIFY_API_KEY=replace-with-your-geoapify-key
+GEOAPIFY_BASE_URL=https://api.geoapify.com
+GEOAPIFY_TIMEOUT_MS=4000
 PORT=5174
 AMAP_PAGE_DELAY_MS=260
 ```
 
-不要使用或提交真实密钥示例。`AMAP_WEB_SERVICE_KEY` 只能位于后端。
+不要使用或提交真实密钥示例。`AMAP_WEB_SERVICE_KEY` 和 `GEOAPIFY_API_KEY` 只能位于后端。
 
 ### 2. 启动后端与网页
 
@@ -89,9 +94,11 @@ Set-Location WhereToPoop_apk
 
 ```powershell
 npm run check
+npm test
+npx --yes -p typescript@5.4.5 tsc --noEmit -p WhereToPoop/tsconfig.json
 ```
 
-当前只有 Node 语法检查，没有自动化业务测试或 CI。发布前人工测试矩阵见 `docs/testing.md`。
+当前包含 Node 语法检查、后端供应商/POI 单元测试和小程序 TypeScript 类型检查；地图交互与 `wx.openLocation` 仍需微信真机验收。发布前矩阵见 `docs/testing.md`。
 
 ## 开发文档
 
@@ -111,7 +118,7 @@ npm run check
 
 - 当前代码与配置用于确认现状，历史文档用于解释演变。
 - 地铁厕所状态只维护在 `data/metro`，不要为客户端复制数据。
-- 地铁 JSON 不保存坐标；坐标由后端通过高德解析。
+- 地铁 JSON 不保存坐标；国内站点坐标由高德周边结果提供，海外站点来自 Geoapify。
 - 每次修改业务代码、配置、数据或正式文档都要追加 `CHANGELOG.md`。
 - 不提交 `.env`、Android `local.properties`、签名文件、证书私钥或真实 Key。
 

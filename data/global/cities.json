@@ -1,0 +1,62 @@
+[
+  {
+    "id": "singapore",
+    "countryCode": "sg",
+    "nameZh": "新加坡",
+    "nameLocal": "Singapore",
+    "center": { "latitude": 1.2899175, "longitude": 103.8519072 },
+    "defaultScale": 11,
+    "bounds": { "west": 103.5655797, "south": 1.1303611, "east": 104.1290145, "north": 1.4787511 },
+    "boundarySource": "Geoapify city result verified 2026-08-05"
+  },
+  {
+    "id": "moscow",
+    "countryCode": "ru",
+    "nameZh": "莫斯科",
+    "nameLocal": "Москва",
+    "center": { "latitude": 55.7505412, "longitude": 37.6174782 },
+    "defaultScale": 10,
+    "bounds": { "west": 37.290502, "south": 55.516684, "east": 37.9674277, "north": 55.9577717 },
+    "boundarySource": "Geoapify city result verified 2026-08-05"
+  },
+  {
+    "id": "tokyo",
+    "countryCode": "jp",
+    "nameZh": "东京",
+    "nameLocal": "東京",
+    "center": { "latitude": 35.6768601, "longitude": 139.7638947 },
+    "defaultScale": 10,
+    "bounds": { "west": 139.45, "south": 35.5, "east": 140.05, "north": 35.9 },
+    "boundarySource": "Geoapify center verified 2026-08-05; urban search rectangle excludes Tokyo remote islands"
+  },
+  {
+    "id": "london",
+    "countryCode": "gb",
+    "nameZh": "伦敦",
+    "nameLocal": "London",
+    "center": { "latitude": 51.5074456, "longitude": -0.1277653 },
+    "defaultScale": 10,
+    "bounds": { "west": -0.5103751, "south": 51.2867601, "east": 0.3340155, "north": 51.6918741 },
+    "boundarySource": "Geoapify Greater London result verified 2026-08-05"
+  },
+  {
+    "id": "new-york",
+    "countryCode": "us",
+    "nameZh": "纽约",
+    "nameLocal": "New York",
+    "center": { "latitude": 40.7127281, "longitude": -74.0060152 },
+    "defaultScale": 10,
+    "bounds": { "west": -74.258843, "south": 40.476578, "east": -73.700233, "north": 40.91763 },
+    "boundarySource": "Geoapify New York City result verified 2026-08-05"
+  },
+  {
+    "id": "sydney",
+    "countryCode": "au",
+    "nameZh": "悉尼",
+    "nameLocal": "Sydney",
+    "center": { "latitude": -33.8698439, "longitude": 151.2082848 },
+    "defaultScale": 10,
+    "bounds": { "west": 150.260825, "south": -34.2598367, "east": 151.343898, "north": -33.3641864 },
+    "boundarySource": "Geoapify Sydney result verified 2026-08-05"
+  }
+]

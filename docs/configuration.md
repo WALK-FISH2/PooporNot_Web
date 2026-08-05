@@ -2,75 +2,59 @@
 
 状态：Active
 
-本文只说明配置位置、作用和当前默认值，不记录真实密钥。所有路径均相对于项目根目录。
+本文只记录配置位置、作用和非敏感默认值。真实密钥不得写入文档或受控文件。
 
-## 1. 后端配置
+## 1. 后端 `.env`
 
-后端启动时由 `server.js` 读取根目录 `.env`。已有进程环境变量优先；只有变量尚未定义时，才使用 `.env` 中的值。
-
-建议从 `.env.example` 创建本地 `.env`，并确保 `.env` 不提交到版本库。
+`server.js` 启动时读取项目根目录 `.env`；已存在的进程环境变量优先。`.env` 被 Git 忽略，`.env.example` 是可提交的纯占位模板。
 
 ```env
-AMAP_JS_KEY=replace-with-web-js-key
-AMAP_SECURITY_JS_CODE=replace-with-security-js-code
-AMAP_WEB_SERVICE_KEY=replace-with-web-service-key
+AMAP_JS_KEY=
+AMAP_SECURITY_JS_CODE=
+AMAP_WEB_SERVICE_KEY=
+GEOAPIFY_API_KEY=
+GEOAPIFY_BASE_URL=https://api.geoapify.com
+GEOAPIFY_TIMEOUT_MS=4000
 PORT=5174
 AMAP_PAGE_DELAY_MS=260
 ```
 
-| 变量 | 必需 | 代码默认值 | 用途 |
+| 变量 | 必需范围 | 代码默认值 | 用途 |
 | --- | --- | --- | --- |
-| `AMAP_JS_KEY` | 网页必需 | 空 | 通过 `/api/config` 发送给浏览器，用于高德 JS API 2.0 |
-| `AMAP_SECURITY_JS_CODE` | 视高德配置 | 空 | 通过 `/api/config` 发送给浏览器 |
-| `AMAP_WEB_SERVICE_KEY` | 业务 API 必需 | `AMAP_KEY` 回退后为空 | 后端调用高德 Web Service |
-| `AMAP_KEY` | 否 | 空 | `AMAP_WEB_SERVICE_KEY` 的兼容别名 |
+| `AMAP_JS_KEY` | 网页地图 | 空 | 经 `/api/config` 返回浏览器，加载高德 JS API |
+| `AMAP_SECURITY_JS_CODE` | 视高德配置 | 空 | 经 `/api/config` 返回浏览器 |
+| `AMAP_WEB_SERVICE_KEY` | 国内业务 | `AMAP_KEY` 后为空 | 国内地点、厕所、地铁和路线 |
+| `AMAP_KEY` | 否 | 空 | Web Service Key 的兼容别名 |
+| `GEOAPIFY_API_KEY` | 全球识别/海外 | 空 | 海外逆地理、文字地点、厕所和地铁；仅后端 |
+| `GEOAPIFY_BASE_URL` | 否 | `https://api.geoapify.com` | Geoapify API 根地址 |
+| `GEOAPIFY_TIMEOUT_MS` | 否 | `4000` | Geoapify 请求超时，毫秒 |
 | `PORT` | 否 | `5174` | Node 监听端口 |
-| `AMAP_PAGE_DELAY_MS` | 否 | `260` | 厕所和地铁多页请求间隔，单位毫秒 |
+| `AMAP_PAGE_DELAY_MS` | 否 | `260` | 国内厕所分页间隔，毫秒 |
 
-当前 `.env` 存在上述前三个高德变量和 `PORT`，具体值不应写入文档。
+当前本机 `.env` 已配置这些变量；具体值不进入文档。本地开发和用户验收使用开发 Geoapify 项目 Key；部署服务器前再切换生产 Key，并重启后端使环境变量生效。
 
-### 已知不一致
+## 2. 网页
 
-- `server.js` 的默认端口是 `5174`。
-- 旧版根 `README.md` 和部分小程序注释曾写 `5173`；本次文档以当前代码默认值为准。
-- `.env.example` 当前包含看起来像真实 Key 的值，而不是占位符。是否仍有效无法确认；应按已泄露处理并轮换，详见 `security-privacy.md`。
+网页没有独立 API 基址，通过同源相对路径访问后端。海外参数未接入网页，现有网页继续使用国内高德链路。高德 JS Key 在浏览器可见是 JS API 的工作方式，必须配置生产域名白名单；Web Service 与 Geoapify Key 不得发给浏览器。
 
-## 2. 网页配置
-
-网页没有独立构建步骤，也没有独立 API 基址。浏览器从当前站点访问以下相对路径：
-
-- `/api/config`
-- `/api/location/reverse`
-- `/api/places`
-- `/api/toilets`
-- `/api/navigation`
-- `/api/metro/nearby`
-
-因此网页应和 `server.js` 部署在同一源，或由反向代理确保这些路径进入统一后端。
-
-高德 JS Key 会暴露到浏览器，这是 JS API 的正常工作方式，但必须在高德控制台绑定允许的生产域名。`AMAP_WEB_SERVICE_KEY` 只能保存在后端环境中。
-
-## 3. 微信小程序配置
+## 3. 微信小程序
 
 配置文件：`WhereToPoop/miniprogram/config/api.ts`。
 
-### 3.1 `API_BASE_URL`
+### 3.1 API 地址
 
-当前有效值：
+生产发布目标地址：
 
 ```ts
 export const API_BASE_URL = "https://pp.nuanzhualife.cn"
 ```
 
-历史开发地址仍以注释保留，包括 `127.0.0.1:5173`、局域网 IP 和公网 HTTP IP。它们只适合开发环境，不是正式发布配置。
+当前工作区为真机局域网测试，`WhereToPoop/miniprogram/config/api.ts` 的活动值是 `http://192.168.1.14:5174`。该地址不是可提交发布的生产配置；发布前必须切回上述 HTTPS 域名。
 
-规则：
-
-- 微信开发者工具模拟器访问本机后端可临时使用 `http://127.0.0.1:<port>`。
-- 真机无法把 `127.0.0.1` 解释为开发电脑；局域网测试需使用电脑局域网 IP，并允许防火墙访问。
-- 二维码预览和正式版本应使用有效 HTTPS 域名。
-- 域名必须在微信公众平台“服务器域名”的 `request` 合法域名中配置。
-- 微信后台配置域名时不要附加 `/api` 路径。
+- 开发者工具可临时使用 `http://127.0.0.1:<port>`。
+- 真机中的 `127.0.0.1` 指手机本身；局域网测试应使用电脑局域网 IP 并放行防火墙。
+- 二维码预览和发布必须使用 HTTPS 域名，并在微信公众平台配置为 `request` 合法域名；后台只填域名，不附加 `/api`。
+- Geoapify Key 和高德 Web Service Key 均不放在小程序配置中。
 
 ### 3.2 地铁调试
 
@@ -78,7 +62,7 @@ export const API_BASE_URL = "https://pp.nuanzhualife.cn"
 export const DEBUG_METRO_CITY = "";
 ```
 
-仅用于跨城市调试。空字符串表示使用逆地理编码结果。生产环境应保持为空；当前后端的 `debugCity` 只覆盖城市名，不改变按距离筛选的核心逻辑。
+只影响国内响应城市显示，不能改变按查询中心 20 km 查询的空间规则。生产保持空字符串。
 
 ### 3.3 腾讯地图样式
 
@@ -88,20 +72,26 @@ export const TENCENT_MAP_STYLE_LIGHT = "";
 export const TENCENT_MAP_STYLE_DARK = "";
 ```
 
-- `TENCENT_MAP_SUBKEY`：腾讯位置服务小程序 subkey。
-- `TENCENT_MAP_STYLE_LIGHT`、`TENCENT_MAP_STYLE_DARK`：腾讯位置服务控制台创建的个性化地图样式 ID。
-- 未配置时必须保留空字符串。填写 `0` 会触发“个性化样式 style0 并未找到”。
-- 样式为空时，小程序 UI 可以切换深浅色，但地图底图不会随之切换。
+当前页面使用单一微信原生默认 `<map>`，这三个字段为预留配置，暂未传给地图组件。夜间按钮只切换页面 UI；填写 `0` 会触发 `style0` 不存在。重新接入个性化底图前必须验证同一个常驻地图实例不会出现空白瓦片。
 
-### 3.4 微信项目标识
+### 3.4 微信项目
 
-`WhereToPoop/project.config.json` 包含当前小程序 `appid`、基础库版本 `3.13.0`、TypeScript 编译插件和 `miniprogram/` 根目录。复制项目或切换账号时必须核对 `appid`，不要把个人 `project.private.config.json` 作为团队配置依据。
+`WhereToPoop/project.config.json` 保存团队项目配置和 AppID；`project.private.config.json` 是个人配置。当前基础库目标为 `3.16.2`，与开发者工具当前可选版本一致。全球功能使用 `map` 的长按、callout 和 `MapContext.fromScreenLocation`，必须用实际基础库与真机复核。
 
-## 4. Android 配置
+## 4. 海外城市配置
 
-### 4.1 本机配置
+文件：`data/global/cities.json`。每项包含：
 
-从 `WhereToPoop_apk/local.properties.example` 创建或维护 `WhereToPoop_apk/local.properties`：
+- 稳定 `id` 和两位 `countryCode`；
+- `nameZh`、`nameLocal`；
+- WGS84 `center` 与 `defaultScale`；
+- 仅后端使用的矩形 `bounds` 与 `boundarySource`。
+
+当前六城：新加坡、莫斯科、东京、伦敦、纽约、悉尼。修改边界前必须通过 Geoapify 返回和实际地点抽查验证；东京使用排除远岛的都市区测试矩形。
+
+## 5. Android
+
+从 `WhereToPoop_apk/local.properties.example` 建立本机 `local.properties`：
 
 ```properties
 sdk.dir=replace-with-android-sdk-path
@@ -109,40 +99,20 @@ API_BASE_URL=https\://pp.nuanzhualife.cn/
 AMAP_ANDROID_KEY=replace-with-your-amap-android-key
 ```
 
-`local.properties` 是本机配置，不应提交。实际是否已经改用生产 HTTPS 域名无法从受控代码确认。
+Android 本轮不发送海外参数。`app/build.gradle.kts` 的受控 fallback 仍是旧 HTTP 地址，构建要求 JDK 17、Android SDK 35；发布前应以本机/CI 配置覆盖为 HTTPS，并评估关闭明文流量。
 
-### 4.2 构建默认值
+## 6. 配置检查
 
-`WhereToPoop_apk/app/build.gradle.kts` 当前默认：
+1. `.env`、`local.properties`、keystore 和真实 Key 未被 Git 跟踪。
+2. `.env.example` 只有空值或明确占位符。
+3. `/api/config` 不返回 Web Service 或 Geoapify Key。
+4. `/api/health` 能从目标 HTTPS 域名访问。
+5. 微信关闭“跳过域名校验”后可调用 API。
+6. 生产日志不包含完整 Key。
+7. 修改后同步本文与 `CHANGELOG.md`。
 
-- `API_BASE_URL`：`http://124.220.73.65:5174/`
-- `AMAP_ANDROID_KEY`：空字符串
-- `compileSdk` / `targetSdk`：35
-- `minSdk`：24
-- Java/Kotlin 目标：17
-- `versionCode`：1
-- `versionName`：`1.0.0`
+## 7. 待确认
 
-`API_BASE_URL` 会在构建时写入 `BuildConfig`。Android Key 同时写入 `BuildConfig` 和 manifest placeholder，必须在高德控制台限制包名 `com.poopornot.wheretopoop` 与正确签名 SHA1。
-
-### 4.3 明文网络
-
-Android manifest 和 `network_security_config.xml` 当前允许明文 HTTP，以兼容旧公网 IP 地址。正式发布应优先切换 HTTPS，并评估关闭 `usesCleartextTraffic`；当前是否已有发布版 HTTPS 配置为“待确认”。
-
-## 5. 配置变更检查
-
-修改配置时至少检查：
-
-1. 不把 `.env`、Android Key 或证书私钥提交到仓库。
-2. `/api/health` 能通过目标 HTTPS 域名访问。
-3. 网页能加载高德地图，且 JS Key 域名白名单正确。
-4. 小程序在关闭“跳过域名校验”后能够调用 API。
-5. Android 地图 Key 的包名和签名匹配。
-6. 同步更新本文件和 `CHANGELOG.md`。
-
-## 6. 待确认
-
-- `.env.example` 中疑似真实 Key 是否已全部吊销和轮换。
-- 生产 Node 进程实际使用的 `PORT` 和环境变量注入方式。
-- Android `local.properties` 的生产 API 地址与 release 签名配置。
-- 腾讯个性化地图 subkey 和深浅色样式是否已在控制台创建。
+- 生产 Node 进程的环境变量注入、重启和密钥轮换流程。
+- 腾讯小程序深浅地图样式是否已经创建。
+- Android release HTTPS、签名和 JDK 17 CI 环境。

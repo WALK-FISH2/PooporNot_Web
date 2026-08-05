@@ -8,9 +8,9 @@
       scale="{{scale}}"
       show-location
       markers="{{markers}}"
-      subkey="{{mapSubkey}}"
-      layer-style="{{mapLayerStyle}}"
       bindmarkertap="onMarkerTap"
+      bindcallouttap="onMarkerCalloutTap"
+      bindlongpress="onMapLongPress"
     />
 
     <cover-view class="brand">
@@ -25,7 +25,7 @@
       <cover-view class="tool locate-tool" bindtap="onLocateTap">
         <cover-image class="locate-icon" src="/assets/icon_location.png"></cover-image>
       </cover-view>
-      <cover-view class="tool metro-tool" bindtap="onShowMetroTap">铁</cover-view>
+      <cover-view class="tool metro-tool {{metroLoading ? 'tool-loading' : ''}}" bindtap="onShowMetroTap">{{metroLoading ? '…' : '铁'}}</cover-view>
       <cover-view class="tool theme-tool" bindtap="onThemeTap">{{darkMode ? '日' : '夜'}}</cover-view>
     </cover-view>
   </view>
@@ -38,15 +38,17 @@
           <text class="city-select-arrow">▾</text>
         </view>
         <input class="input place-input" value="{{placeKeyword}}" placeholder="小区、商场、地铁站或地址" bindinput="onPlaceInput" confirm-type="search" bindconfirm="onPlaceSearchTap" />
-        <button class="small-button secondary" bindtap="onPlaceSearchTap">搜地点</button>
+        <button class="small-button secondary" bindtap="onPlaceSearchTap" loading="{{placeLoading}}" disabled="{{placeLoading}}">{{placeLoading ? '搜索中' : '搜地点'}}</button>
       </view>
       <view class="action-row">
         <picker mode="selector" range="{{radiusOptions}}" bindchange="onRadiusChange">
           <view class="filter">半径 {{radiusText}}</view>
         </picker>
-        <button class="primary search-action" bindtap="onSearchTap">查厕所</button>
+        <button class="primary search-action" bindtap="onSearchTap" loading="{{toiletLoading}}" disabled="{{toiletLoading}}">{{toiletLoading ? '查询中' : '查厕所'}}</button>
       </view>
     </view>
+
+    <view wx:if="{{warningText}}" class="warning-text">{{warningText}}</view>
 
     <view class="panel-head">
       <view>
@@ -113,6 +115,7 @@
 
       <view wx:else class="empty">暂无结果</view>
     </scroll-view>
+    <view wx:if="{{regionMode === 'overseas'}}" class="data-attribution">地点数据 © OpenStreetMap contributors · Geoapify</view>
   </view>
 
   <view wx:if="{{cityPanelVisible}}" class="city-mask" catchtap="onCityPanelClose">
@@ -121,21 +124,37 @@
         <text class="city-sheet-title">选择城市</text>
         <text class="city-close" bindtap="onCityPanelClose">×</text>
       </view>
+      <view class="region-tabs">
+        <view class="region-tab {{cityPanelRegion === 'mainland' ? 'active' : ''}}" data-region="mainland" bindtap="onRegionModeTap">中国大陆</view>
+        <view class="region-tab {{cityPanelRegion === 'overseas' ? 'active' : ''}}" data-region="overseas" bindtap="onRegionModeTap">其他地区</view>
+      </view>
       <scroll-view class="city-scroll" scroll-y>
-        <view class="city-section-title">推荐城市</view>
-        <view class="city-chip-grid recommended-grid">
-          <view wx:for="{{recommendedCities}}" wx:key="*this" class="city-chip" data-city="{{item}}" bindtap="onCitySelectTap">{{item}}</view>
-        </view>
+        <block wx:if="{{cityPanelRegion === 'mainland'}}">
+          <view class="city-section-title">推荐城市</view>
+          <view class="city-chip-grid recommended-grid">
+            <view wx:for="{{recommendedCities}}" wx:key="*this" class="city-chip" data-city="{{item}}" bindtap="onCitySelectTap">{{item}}</view>
+          </view>
 
-        <view class="city-section-title">城市开头字母</view>
-        <view class="letter-grid">
-          <view wx:for="{{cityLetters}}" wx:key="*this" class="letter-chip {{activeCityLetter === item ? 'active' : ''}}" data-letter="{{item}}" bindtap="onCityLetterTap">{{item}}</view>
-        </view>
+          <view class="city-section-title">城市开头字母</view>
+          <view class="letter-grid">
+            <view wx:for="{{cityLetters}}" wx:key="*this" class="letter-chip {{activeCityLetter === item ? 'active' : ''}}" data-letter="{{item}}" bindtap="onCityLetterTap">{{item}}</view>
+          </view>
 
-        <view class="letter-title">{{activeCityLetter}}</view>
-        <view class="city-list">
-          <view wx:for="{{visibleCities}}" wx:key="*this" class="city-list-item" data-city="{{item}}" bindtap="onCitySelectTap">{{item}}</view>
-        </view>
+          <view class="letter-title">{{activeCityLetter}}</view>
+          <view class="city-list">
+            <view wx:for="{{visibleCities}}" wx:key="*this" class="city-list-item" data-city="{{item}}" bindtap="onCitySelectTap">{{item}}</view>
+          </view>
+        </block>
+        <block wx:else>
+          <view class="city-section-title">重点验证城市</view>
+          <view class="overseas-city-grid">
+            <view wx:for="{{overseasCities}}" wx:key="id" class="overseas-city" data-city-id="{{item.id}}" bindtap="onOverseasCityTap">
+              <text class="overseas-city-name">{{item.nameZh}}</text>
+              <text class="overseas-city-local">{{item.nameLocal}}</text>
+            </view>
+          </view>
+          <view wx:if="{{!overseasCities.length}}" class="empty">海外城市配置暂不可用</view>
+        </block>
       </scroll-view>
     </view>
   </view>

@@ -2,7 +2,7 @@
 
 状态：Draft
 
-本文给出与当前代码兼容的部署方式。代码只确认小程序使用 `https://pp.nuanzhualife.cn`，无法确认线上主机、进程管理和证书的实际配置，因此基础设施细节保持“待确认”。
+本文给出与当前代码兼容的部署方式。小程序生产目标为 `https://pp.nuanzhualife.cn`；当前工作区可能为本地或局域网测试临时切换 API 地址。无法确认线上主机、进程管理和证书的实际配置，因此基础设施细节保持“待确认”。
 
 ## 1. 目标拓扑
 
@@ -16,8 +16,8 @@
        http://127.0.0.1:5174
                 |
           node server.js
-             /      \
-     高德 Web API   data/metro
+       /       |        \
+    高德      Geoapify      data/metro
 ```
 
 统一后端同时提供 API 和网页静态文件。生产环境不需要让公网直接访问 Node 的 `5174` 端口。
@@ -30,6 +30,7 @@
 - 项目根目录完整代码和 `data/metro`。
 - 生产 `.env`，不来自版本库。
 - 高德 Key 已配置对应服务与域名/来源限制。
+- Geoapify 生产 Key 已配置配额保护；服务器可访问 Geoapify HTTPS。
 - 云安全组开放 80/443；Node 端口只监听本机或限制内网访问。
 
 ## 3. 部署统一后端
@@ -40,6 +41,9 @@
 AMAP_JS_KEY=production-web-js-key
 AMAP_SECURITY_JS_CODE=production-security-code
 AMAP_WEB_SERVICE_KEY=production-web-service-key
+GEOAPIFY_API_KEY=production-geoapify-key
+GEOAPIFY_BASE_URL=https://api.geoapify.com
+GEOAPIFY_TIMEOUT_MS=4000
 PORT=5174
 AMAP_PAGE_DELAY_MS=260
 ```
@@ -48,6 +52,7 @@ AMAP_PAGE_DELAY_MS=260
 
 ```bash
 npm run check
+npm test
 npm start
 ```
 
@@ -166,15 +171,16 @@ AMAP_ANDROID_KEY=production-android-key
 2. `GET /api/config` 返回非空网页 JS Key，但不包含 Web Service Key。
 3. 选择一个已知坐标调用 `/api/location/reverse`。
 4. 调用 `/api/toilets`，确认 `pois`、`partial` 和响应时间。
-5. 调用 `/api/metro/nearby`，确认首次和缓存后响应。
-6. 网页地图加载、定位、厕所搜索和路线可用。
-7. 小程序关闭域名跳过校验后，定位、厕所、地铁和 `wx.openLocation` 可用。
-8. Android 使用 HTTPS 构建，地图、定位、路线与外部导航可用。
+5. 调用 `/api/metro/nearby`，确认按需返回 20 km 内最近 10 站。
+6. 调用 `/api/global/cities` 和一组海外 WGS84 逆地理、厕所、地铁请求，确认 `providerUsed=geoapify` 和响应耗时。
+7. 网页地图加载、定位、厕所搜索和路线可用。
+8. 小程序关闭域名跳过校验后，国内外定位、长按、厕所、地铁和 `wx.openLocation` 可用。
+9. Android 使用 HTTPS 构建，地图、定位、路线与外部导航可用。
 
 ## 9. 回滚
 
 - 发布前保留上一版本代码、配置备份和地铁数据快照。
-- 后端回滚代码后重启进程；进程内地铁缓存随之清空。
+- 后端回滚代码后重启进程，并重新执行国内外接口冒烟。
 - 不要用旧 `.env` 覆盖已轮换密钥。
 - 小程序无法直接让所有用户瞬间回退；需要在微信平台重新提交可用版本，具体平台回退能力待确认。
 - Android 回滚需要发布更高 `versionCode` 的修复版本，不能简单重新上传旧包。
@@ -187,11 +193,11 @@ AMAP_ANDROID_KEY=production-android-key
 
 ### 502 Bad Gateway
 
-检查 Node 是否监听正确端口、反向代理 `proxy_pass`、防火墙和 Node 日志。若 Node 正常但 API 返回 JSON 502，则继续检查高德 Key、配额和错误信息。
+检查 Node 是否监听正确端口、反向代理 `proxy_pass`、防火墙和 Node 日志。若 Node 正常但 API 返回 JSON 502/503/504，继续检查高德/Geoapify Key、Geoapify 可达性、配额和脱敏诊断。
 
-### 地铁首次请求很慢
+### 海外结果响应慢
 
-首次会建立城市地铁站索引；部署后重启会清空缓存。若持续慢，检查高德 QPS、`AMAP_PAGE_DELAY_MS` 和已维护城市数量。
+海外 POI 直接使用 Geoapify，不再串行等待 Overpass。检查 `providerUsed`、`durationMs`、Geoapify 配额和服务端诊断；默认 `GEOAPIFY_TIMEOUT_MS=4000`，不要通过无限延长超时阻塞小程序。
 
 ### 网页底图加载失败
 

@@ -17,7 +17,8 @@
 
 ## 2. 目录职责
 
-- `server.js`：统一 API、外部高德请求、静态文件服务和地铁坐标合并。
+- `server.js`：统一 API、国内高德链路、海外 POI 编排、静态文件服务和地铁状态合并。
+- `lib/`：Geoapify、Overpass、HTTP、POI 规范化和安全错误适配。
 - `index.html`、`app.js`、`styles.css`：网页版。
 - `WhereToPoop/miniprogram/`：微信小程序。
 - `WhereToPoop_apk/`：Android 客户端。
@@ -31,7 +32,8 @@
 - 网页使用高德 JS API，并调用 `/api/navigation` 绘制步行路线。
 - 小程序使用微信 `map` 组件；厕所和地铁站只保留 `wx.openLocation` 导航，不得无意恢复路线按钮或 `/api/navigation`。
 - Android 使用高德 Android SDK，当前仍保留内部步行路线和外部地图导航。
-- 三端地铁查询都以基准点 20 km 空间范围为准，不只按行政城市。
+- 三端地铁查询都以基准点 20 km 空间范围为准，不只按行政城市；小程序只在点击专用按钮后查询最近 10 站。
+- 微信小程序海外模式使用 WGS84、Overpass 与 Geoapify；网页和 Android 本轮仍只支持现有国内业务。
 
 跨平台行为需要统一时，先修改规格或新增 ADR，不要把单端决策直接推广到其他端。
 
@@ -43,7 +45,7 @@
 - `1` 绿色，`0` 红色，`2` 橙色 `#F59E0B`。
 - 未核实信息使用 `2`，不能猜成 `1` 或 `0`。
 - 跨市重复线路修改时检查所有镜像文件。
-- 数据变化后重启后端，以清空进程内城市站点缓存。
+- 数据变化后重启后端，以重新加载进程内本地状态索引。
 
 详细规则见 `docs/metro-data.md`。
 
@@ -53,13 +55,13 @@
 - `AMAP_WEB_SERVICE_KEY` 只在后端使用。
 - 浏览器 JS Key 必须限制域名；Android Key 必须限制包名和签名。
 - 小程序正式 API 使用 HTTPS 合法域名，当前配置为 `https://pp.nuanzhualife.cn`。
-- `.env.example` 当前存在疑似真实 Key 风险；在完成轮换前不要复制、传播或写入文档。
+- `GEOAPIFY_API_KEY` 与 `AMAP_WEB_SERVICE_KEY` 都只能保存在后端环境中；`.env.example` 只写占位符。
 
 ## 6. 实现约定
 
 - 文本文件统一 UTF-8。
 - 优先沿用现有轻量实现，不为单一需求引入大型框架。
-- 外部 API 调用要考虑分页、QPS、缓存、错误和部分结果。
+- 外部 API 调用要考虑分页、QPS、超时、降级、错误和部分结果；海外 POI 默认 Overpass，失败后 Geoapify。
 - 后端错误必须转换为响应，不能让 Node 进程退出。
 - 选中标记、列表详情、路线或导航必须使用同一目标坐标。
 - 小程序需兼容项目实际微信编译链；避免未经验证的现代语法。
@@ -82,7 +84,7 @@ Set-Location WhereToPoop_apk
 
 Android 构建要求 JDK 17。微信小程序必须在开发者工具和真机上验证定位、合法域名和 `wx.openLocation`。
 
-当前没有自动化测试；按 `docs/testing.md` 执行与变更风险相称的人工验证。无法运行的检查要在交付说明中明确写出。
+后端单元测试运行 `npm test`；小程序类型检查见 `docs/testing.md`。地图、定位、合法域名、长按和 `wx.openLocation` 仍必须真机验证。无法运行的检查要在交付说明中明确写出。
 
 ## 8. 文档工作流
 

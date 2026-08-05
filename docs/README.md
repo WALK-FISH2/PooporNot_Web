@@ -37,24 +37,26 @@
 | `deployment.md` | Draft | 与代码兼容的部署方案，实际基础设施待确认 |
 | `release.md` | Draft | 建议发布流程，负责人和版本策略待确认 |
 | `roadmap.md` | Draft | 建议优先级，尚未承诺排期 |
-| `adr/` | Draft | 架构决策记录索引与模板 |
-| `specs/` | Draft | 功能规格、计划和任务模板 |
+| `adr/` | Active/Draft | ADR-0001 已生效；索引和模板仍为 Draft |
+| `specs/` | Draft | 功能规格、计划、任务与验收；全球 POI 已实现，仍待真机验收 |
 
 ## 4. 当前事实清单
 
-盘点日期：2026-08-04。
+盘点日期：2026-08-05。
 
 - 正式根目录包含网页、统一 Node 后端、微信小程序、Android 和共享地铁数据。
 - `server.js` 默认监听 `5174`，同时提供 API 和网页静态文件。
-- 小程序当前 API 基址为 `https://pp.nuanzhualife.cn`。
+- 小程序生产目标 API 基址为 `https://pp.nuanzhualife.cn`；当前活动开发地址以 `WhereToPoop/miniprogram/config/api.ts` 为准。
 - 网页与 Android 调用 `/api/navigation`；小程序只使用 `wx.openLocation`。
 - 三端共用 `data/metro`；线路 JSON 不保存坐标。
-- 地铁按基准点 20 km 范围跨城市查询。
+- 地铁只按专用按钮查询基准点 20 km 内最近 10 站；小程序不再预加载地铁。
 - 地铁状态颜色为绿色 `1`、红色 `0`、橙色 `2`。
 - `city_index.json` 有 52 个城市索引；实际 5 个城市目录、21 个线路文件、408 条站点记录。
 - 当前站点状态：`1` 共 86 条，`2` 共 322 条，`0` 为 0 条。
-- 仓库没有自动化测试或 CI；根 `npm run check` 只做 Node 语法检查。
-- `.env.example` 包含疑似真实 Key，是否已轮换无法确认。
+- 小程序已实现海外地点、厕所和地铁查询：Geoapify 负责海外地理编码与 POI，海外坐标保持 WGS84。
+- 首批海外城市配置位于 `data/global/cities.json`；网页和 Android 本轮不增加海外 UI。
+- 仓库已有 14 个 Node 单元测试和小程序 TypeScript 类型检查，但没有 CI；微信真机验收仍待完成。
+- `.env.example` 已改为纯占位符并纳入版本控制；真实 Key 只保存在被忽略的 `.env`。
 
 ## 5. 维护规则
 
