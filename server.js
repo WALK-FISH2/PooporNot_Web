@@ -21,6 +21,7 @@ const GEOAPIFY_BASE_URL = process.env.GEOAPIFY_BASE_URL || "https://api.geoapify
 const GEOAPIFY_TIMEOUT_MS = Number(process.env.GEOAPIFY_TIMEOUT_MS || 4000);
 const GEOAPIFY_SEARCH_TIMEOUT_MS = Number(process.env.GEOAPIFY_SEARCH_TIMEOUT_MS || 6000);
 const GEOAPIFY_SEARCH_CACHE_TTL_MS = Number(process.env.GEOAPIFY_SEARCH_CACHE_TTL_MS || 300000);
+const GEOAPIFY_MAP_TILE_KEY = process.env.GEOAPIFY_MAP_TILE_KEY || "";
 const metroCityStationCache = new Map();
 let metroCityIndexCache = null;
 let localMetroStatusCache = null;
@@ -75,6 +76,7 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, {
         jsKey: AMAP_JS_KEY,
         securityJsCode: AMAP_SECURITY_JS_CODE,
+        geoapifyMapTileKey: GEOAPIFY_MAP_TILE_KEY,
       });
     }
 

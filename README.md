@@ -19,23 +19,25 @@ docs/                              正式开发文档
 
 | 平台 | 地图 | 导航 |
 | --- | --- | --- |
-| 网页 | 高德 JS API 2.0 | 后端高德步行路线并在网页绘制 |
+| 网页 | 国内高德 JS API 2.0；海外 Leaflet 1.9.4 + Geoapify Tiles | 国内绘制高德步行路线；海外打开 Google Maps |
 | 微信小程序 | 微信 `map` 组件/腾讯地图底图 | `wx.openLocation`，不调用内部路线 |
 | Android | 高德 Android SDK | 后端步行路线 + 外部地图导航 |
 
 ## 当前功能
 
-- 定位、文字地点与地图选点查询中心（地图长按当前仅微信小程序支持）。
+- 定位、文字地点与地图右键/长按选点查询中心（网页和微信小程序支持）。
 - 300 m、500 m、1 km、3 km 附近厕所查询。
 - 厕所地图标记、列表、距离和详情。
 - 专用按钮查询中心 20 km 内最近 10 个地铁站。
 - 地铁厕所状态：绿色有厕所、红色无厕所、橙色不确定。
-- 微信小程序支持中国大陆与海外模式；首批海外城市为新加坡、莫斯科、东京、伦敦、纽约和悉尼。
-- 国内业务继续使用高德与 GCJ-02；小程序海外地点与 POI 使用 Geoapify 和 WGS84。
+- 网页和微信小程序支持中国大陆与海外模式；首批海外文字搜索城市为新加坡、莫斯科、东京、伦敦、纽约和悉尼。
+- 国内业务继续使用高德与 GCJ-02；海外地点与 POI 使用 Geoapify 和 WGS84，网页海外底图使用 Geoapify Tiles。
 - 网页、小程序和 Android 深浅色界面。
 - 小程序分享与新版本更新提示。
 
-“附近厕所”来自高德 POI，不保证覆盖现实中的全部厕所。当前没有账号、用户投票、后台管理或自建全国厕所数据库。
+网页版全球支持已实现：国内继续使用高德/GCJ-02，海外使用同源 Leaflet 1.9.4 + Geoapify Tiles/WGS84；详情见 `docs/specs/web-global-support/` 和 ADR-0002。发布前仍需完成真实浏览器定位、移动端长按、外部导航弹窗和六城完整 UI 验收。
+
+“附近厕所”国内来自高德 POI、海外来自 Geoapify/OSM 数据，不保证覆盖现实中的全部厕所。当前没有账号、用户投票、后台管理或自建全国厕所数据库。
 
 ## 快速启动
 
@@ -48,6 +50,7 @@ AMAP_JS_KEY=replace-with-your-web-js-key
 AMAP_SECURITY_JS_CODE=replace-with-your-security-code
 AMAP_WEB_SERVICE_KEY=replace-with-your-web-service-key
 GEOAPIFY_API_KEY=replace-with-your-geoapify-key
+GEOAPIFY_MAP_TILE_KEY=replace-with-your-browser-tile-key
 GEOAPIFY_BASE_URL=https://api.geoapify.com
 GEOAPIFY_TIMEOUT_MS=4000
 GEOAPIFY_SEARCH_TIMEOUT_MS=6000
@@ -56,7 +59,7 @@ PORT=5174
 AMAP_PAGE_DELAY_MS=260
 ```
 
-不要使用或提交真实密钥示例。`AMAP_WEB_SERVICE_KEY` 和 `GEOAPIFY_API_KEY` 只能位于后端。
+不要使用或提交真实密钥示例。`AMAP_WEB_SERVICE_KEY` 和 `GEOAPIFY_API_KEY` 只能位于后端；`GEOAPIFY_MAP_TILE_KEY` 是浏览器可见的独立瓦片凭据，不得与后端 Key 共用。
 
 ### 2. 启动后端与网页
 
@@ -115,6 +118,7 @@ npx --yes -p typescript@5.4.5 tsc --noEmit -p WhereToPoop/tsconfig.json
 - 部署与发布：`docs/deployment.md`、`docs/release.md`
 - 安全隐私：`docs/security-privacy.md`
 - 路线图：`docs/roadmap.md`
+- 网页全球支持：`docs/specs/web-global-support/`
 
 ## 重要规则
 

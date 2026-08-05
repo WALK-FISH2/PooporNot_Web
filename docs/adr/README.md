@@ -6,7 +6,8 @@
 
 ## 当前记录
 
-- `0001-global-poi-and-coordinate-strategy.md`：状态 `Accepted`。确定微信小程序全球 POI 数据源、GCJ-02/WGS84 坐标策略、查询中心、两步查厕所、按按钮查询地铁及 marker 图层规则。
+- `0001-global-poi-and-coordinate-strategy.md`：状态 `Active`。确定微信小程序全球 POI 数据源、GCJ-02/WGS84 坐标策略、查询中心、两步查厕所、按按钮查询地铁及 marker 图层规则。
+- `0002-web-global-map-strategy.md`：状态 `Active`。确定网页版国内继续使用高德/GCJ-02，海外使用 Leaflet/Geoapify Tiles/WGS84，并分离浏览器瓦片凭据。
 
 ## 待补决策
 

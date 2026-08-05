@@ -4,16 +4,17 @@
 
 ## 1. 系统边界
 
-Poopornot 包含网页、微信小程序、Android、统一 Node.js 后端和共享国内地铁厕所状态。全球 POI 支持当前只进入微信小程序；网页与 Android 未传海外参数时继续使用原国内接口。
+Poopornot 包含网页、微信小程序、Android、统一 Node.js 后端和共享国内地铁厕所状态。全球 POI 支持已进入网页和微信小程序；Android 仍只使用国内接口。未传海外参数的旧请求继续进入国内兼容分支。
 
 ```text
-网页（国内） ──────────────┐
+网页（国内/海外） ──────────┐
 微信小程序（国内/海外） ───┼─> server.js
 Android（国内） ──────────┘      ├─> 高德 Web Service（国内）
                                 ├─> Geoapify（全球地理编码、海外 POI）
                                 └─> data/metro（国内厕所状态）
 
-网页 ─> 高德 JS API 2.0
+网页国内 ─> 高德 JS API 2.0
+网页海外 ─> 同源 Leaflet 1.9.4 ─> Geoapify Tiles
 微信小程序 ─> 微信 map / 腾讯地图底图
 Android ─> 高德 Android SDK
 ```
@@ -30,15 +31,19 @@ Android ─> 高德 Android SDK
 - `lib/global-poi-service.js`：Geoapify 地理编码、POI 查询和统一响应元数据。
 - `data/global/cities.json`：六座重点海外城市的中心、国家代码、缩放与搜索硬边界。
 - `data/metro/`：国内线路、站名、线路色和厕所状态，不保存坐标。
+- `web-core.js`：网页查询中心、请求上下文、请求淘汰和外部导航 URL 的纯逻辑。
+- `web-map-adapters.js`：高德与 Leaflet 的统一地图适配层。
+- `vendor/leaflet/`：同源托管的 Leaflet 1.9.4 发行文件、图片和许可证。
 - `WhereToPoop/miniprogram/services/api.ts`：小程序 API 类型和请求参数。
 - `WhereToPoop/miniprogram/utils/coordinates.ts`：小程序地图与导航坐标出口。
 - `WhereToPoop/miniprogram/pages/index/`：查询中心、独立结果图层、城市、长按和导航交互。
+- `docs/specs/web-global-support/`：当前网页版双地图、查询中心和发布验收规则。
 
-网页仍通过 `/api/config` 加载高德 JS API；Android 仍使用原 Retrofit 接口。两者当前不发送 `region=overseas`。
+网页通过 `/api/config` 加载高德 JS API 配置和独立 Geoapify 瓦片凭据，并仅在首次进入海外模式时加载 Leaflet。Android 仍使用原 Retrofit 国内接口。
 
 ## 3. 查询中心与客户端状态
 
-小程序明确区分地图视口中心和正式 `queryCenter`。查询中心来源为：
+网页和小程序明确区分地图视口中心和正式 `queryCenter`。查询中心来源为：
 
 - `current-location`：首次定位或重新定位；设为查询中心并自动查厕所。
 - `place-search`：用户点击文字地点结果；只设定中心，等待按钮。
@@ -94,10 +99,10 @@ Geoapify Places amenity.toilet
 
 ## 6. 坐标策略
 
-| 区域 | 数据与查询 | marker | `wx.openLocation` |
+| 区域 | 数据与查询 | marker | 导航 |
 | --- | --- | --- | --- |
-| 中国大陆 | GCJ-02 / 高德 | GCJ-02 | GCJ-02 |
-| 海外 | WGS84 / Geoapify | 原始 WGS84 | 同一原始 WGS84 |
+| 中国大陆 | GCJ-02 / 高德 | GCJ-02 | 网页高德路线；小程序 `wx.openLocation` 使用 GCJ-02 |
+| 海外 | WGS84 / Geoapify | 原始 WGS84 | 网页 Google Maps；小程序 `wx.openLocation` 使用同一原始 WGS84 |
 
 所有规范化 POI 显式携带 `coordinateSystem`。地图展示和导航函数只校验并返回已声明坐标，不执行无条件转换。网页和 Android 的国内坐标行为未改变。
 
@@ -115,6 +120,7 @@ Geoapify Places amenity.toilet
 
 - 一个后端兼容三个客户端，旧请求默认国内。
 - 微信小程序国内/海外查询中心、地图长按、独立厕所/地铁图层和外部导航。
+- 网页国内高德与海外 Leaflet 双地图、统一查询中心、独立厕所/地铁图层、国内路线和海外外部导航。
 - Geoapify 直连 POI、WGS84 海外链路、六城硬边界搜索。
 - 国内地铁一次周边查询与本地状态匹配。
 
@@ -126,7 +132,7 @@ Geoapify Places amenity.toilet
 
 ### 尚未实现
 
-- 网页和 Android 海外 UI。
+- Android 海外 UI。
 - 港澳台专门策略、全球城市下拉列表、用户投票、持久化/分布式缓存、认证和监控。
 - 微信 Android/iOS 真机上的全球功能完整验收。
 
@@ -138,4 +144,15 @@ Geoapify Places amenity.toilet
 
 - 海外能力的正式发布日期与生产隐私申报文本。
 - 生产反向代理限流、日志保留、监控和 Geoapify 配额告警。
-- 后续是否扩展更多海外城市文字搜索配置、港澳台、网页或 Android。
+- 后续是否扩展更多海外城市文字搜索配置、港澳台或 Android。
+
+## 10. 网页双地图实现
+
+ADR-0002 确定网页版按区域选择地图引擎：
+
+```text
+网页国内 ─> 高德 JS API / GCJ-02
+网页海外 ─> Leaflet 1.9.4 / Geoapify Tiles / WGS84
+```
+
+`web-map-adapters.js` 统一中心、marker、视口、主题、路线和选点事件；`web-core.js` 负责区域上下文、查询中心、请求指纹和旧响应淘汰。国内行为保持高德兼容；海外复用现有后端 Geoapify 地点、厕所和地铁接口，浏览器用独立瓦片凭据直接请求 Geoapify Tiles。Leaflet 1.9.4 从 `vendor/leaflet/` 同源按需加载，不在国内启动时下载。

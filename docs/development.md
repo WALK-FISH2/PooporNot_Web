@@ -9,7 +9,7 @@
 ### 后端与网页
 
 - Node.js 18 或更高版本，原因是 `server.js` 使用全局 `fetch`。
-- 有效的高德 JS API Key、安全密钥和 Web Service Key；开发海外功能还需要 Geoapify Key。
+- 有效的高德 JS API Key、安全密钥和 Web Service Key；开发海外功能还需要后端 Geoapify Key。网页版海外功能尚未实现，实施时还需要独立的浏览器瓦片 Key。
 
 根 `package.json` 当前没有第三方依赖，因此不需要安装运行时包。
 
@@ -44,6 +44,8 @@ GEOAPIFY_SEARCH_CACHE_TTL_MS=300000
 PORT=5174
 AMAP_PAGE_DELAY_MS=260
 ```
+
+网页版全球支持使用独立 `GEOAPIFY_MAP_TILE_KEY`。不要把真实值写入源码或文档；只写入被忽略的 `.env`，并使用与 `GEOAPIFY_API_KEY` 不同的独立凭据。Leaflet 1.9.4 已同源保存在 `vendor/leaflet/`，无需安装前端依赖；开发与验收步骤见 `docs/specs/web-global-support/plan.md`。
 
 ### 2.2 启动
 

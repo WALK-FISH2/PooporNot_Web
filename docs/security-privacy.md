@@ -13,11 +13,15 @@
 | 场景 | 第三方 |
 | --- | --- |
 | 网页地图与国内业务 | 高德 JS API / Web Service |
+| 网页海外底图 | 浏览器直连 Geoapify Tiles；瓦片数据涉及 OpenStreetMap/OpenMapTiles |
+| 网页海外地点、厕所与地铁 | 后端转发至 Geoapify |
 | 小程序底图与位置页 | 微信 `map` / 腾讯地图、`wx.openLocation` |
 | 小程序全球国家/城市识别 | 后端转发至 Geoapify Reverse Geocoding |
 | 小程序海外文字地点 | 后端转发至 Geoapify Forward Geocoding |
 | 小程序海外厕所/地铁 | 后端转发至 Geoapify Places |
 | Android 地图与定位 | 高德 Android SDK；业务经统一后端 |
+
+网页海外数据流已经实现：浏览器直接向 Geoapify Tiles 请求当前视口瓦片；文字地点、厕所和地铁仍通过统一后端转发。Geoapify 瓦片服务会处理客户端 IP、Referer 和所查看区域，正式隐私文本必须在上线前补充该事实。
 
 “本项目不持久化”不等于第三方不处理。正式隐私文本必须列出实际处理者、用途和平台政策链接，法务措辞待确认。
 
@@ -43,11 +47,13 @@ Android 声明网络、Wi-Fi 状态和粗略/精确位置权限，采用一次�
 | `AMAP_ANDROID_KEY` | 构建配置并嵌入 APK | 可提取 | 包名和签名 SHA1 |
 | 腾讯地图 subkey | 小程序包 | 可见 | 小程序 AppID/平台限制 |
 
+`GEOAPIFY_MAP_TILE_KEY` 属于浏览器可见的独立客户端凭据：真实值只由服务器 `.env` 注入，但不能被视为秘密。它不得复用 `GEOAPIFY_API_KEY`，需要独立配额、轮换和可用的来源限制。
+
 当前措施：
 
 - `.env` 被 Git 忽略；`.env.example` 只含空值和公共默认 URL。
 - 小程序源码不包含 Geoapify Key。
-- `/api/config` 只返回网页必须使用的 JS 配置。
+- `/api/config` 只返回网页必须使用的高德 JS 配置和独立瓦片凭据。
 - 供应商错误会脱敏已知密钥和 URL 中的 `apiKey`/`key` 参数。
 
 历史上 `.env.example` 曾出现疑似真实高德 Key，是否已经在供应商控制台吊销仍无法从代码确认；应继续按可能泄露处理并核对 Git 历史。
@@ -80,13 +86,15 @@ Android 声明网络、Wi-Fi 状态和粗略/精确位置权限，采用一次�
 ### 当前有效
 
 - 无账号、无业务数据库、无后台持续定位、无轨迹持久化。
-- API Key 仅按平台需要暴露，Geoapify 与高德 Web Service Key 只在后端。
+- API Key 仅按平台需要暴露；后端 `GEOAPIFY_API_KEY` 与高德 Web Service Key 只在后端。独立 `GEOAPIFY_MAP_TILE_KEY` 会暴露给浏览器，必须按公开客户端凭据管理。
 - 海外坐标经自己的后端转发到 Geoapify。
+- 网页海外瓦片已按 ADR-0002 直连 Geoapify，Leaflet 发行文件从本项目同源加载。
 
 ### 尚未实现
 
 - API 认证、服务器限流、配额告警、集中日志脱敏和正式保留策略。
 - 用户投票、纠错、数据导出/删除流程和第三方清单自动化。
+- 网页海外瓦片的正式隐私披露、来源限制和配额告警。
 
 ### 无法确认
 
@@ -100,6 +108,7 @@ Android 声明网络、Wi-Fi 状态和粗略/精确位置权限，采用一次�
 - [ ] 开发 Key 与生产 Key 分离，历史疑似 Key 已轮换。
 - [ ] 微信 HTTPS 合法域名、证书和隐私申报通过。
 - [ ] Geoapify/OSM 数据处理和署名已按当前条款复核。
+- [ ] 网页海外上线前确认瓦片直连数据流、独立客户端 Key、来源限制和 Geoapify/OSM/OpenMapTiles 署名。
 - [ ] 反向代理限流、配额告警和日志脱敏已配置。
 - [ ] Android 使用 HTTPS并复核权限、备份和签名。
 - [ ] 真机确认拒绝定位仍可使用手动功能。

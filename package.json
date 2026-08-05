@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "start": "node server.js",
-    "check": "node --check server.js && node --check app.js && node --check lib/provider-error.js && node --check lib/http-json.js && node --check lib/poi.js && node --check lib/global-poi-service.js && node --check lib/providers/geoapify.js",
+    "check": "node --check server.js && node --check web-core.js && node --check web-map-adapters.js && node --check app.js && node --check lib/provider-error.js && node --check lib/http-json.js && node --check lib/poi.js && node --check lib/global-poi-service.js && node --check lib/providers/geoapify.js",
     "test": "node --test test/*.test.js"
   }
 }

@@ -47,10 +47,14 @@
 给网页返回：
 
 ```json
-{ "jsKey": "...", "securityJsCode": "..." }
+{
+  "jsKey": "...",
+  "securityJsCode": "...",
+  "geoapifyMapTileKey": "..."
+}
 ```
 
-`AMAP_JS_KEY` 与 `AMAP_SECURITY_JS_CODE` 会发送给浏览器；`AMAP_WEB_SERVICE_KEY` 和 `GEOAPIFY_API_KEY` 不返回。
+`AMAP_JS_KEY`、`AMAP_SECURITY_JS_CODE` 和独立的 `GEOAPIFY_MAP_TILE_KEY` 会发送给浏览器；`AMAP_WEB_SERVICE_KEY` 和后端 `GEOAPIFY_API_KEY` 不返回。`geoapifyMapTileKey` 是可选客户端字段，旧网页和其他客户端可忽略。
 
 ### 2.3 `GET /api/global/cities`
 
@@ -252,7 +256,7 @@ Geoapify 请求同时使用城市矩形与国家代码硬过滤，后端再过�
 ## 7. 兼容与限制
 
 - 未传海外参数的原接口路径和核心字段保持兼容；国内地铁按已确认规格改为单次周边查询、20 km、最多 10 站。
-- 海外范围暂不用于网页和 Android。
+- 海外范围当前用于网页和微信小程序；Android 仍不发送海外参数。
 - 当前没有 API 版本、认证、服务器端缓存、重试轮询或请求限流。
 - 修改契约时同步客户端类型、本文件和 `CHANGELOG.md`。
 

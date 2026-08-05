@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>拉了么</title>
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./styles.css?v=20260805-tools" />
   </head>
   <body>
     <main class="app-shell">
@@ -19,11 +19,19 @@
       </section>
 
       <section class="search-panel" aria-label="选择城市和基准地点">
+        <label class="search-field region-field">
+          <span>区域</span>
+          <select id="regionSelect">
+            <option value="mainland">中国大陆</option>
+            <option value="overseas">其他地区</option>
+          </select>
+        </label>
         <label class="search-field city-field">
           <span>城市</span>
-          <input id="cityInput" type="text" value="无锡" autocomplete="off" />
+          <input id="cityInput" type="text" placeholder="输入城市" autocomplete="off" />
+          <select id="overseasCitySelect" hidden aria-label="选择海外城市"></select>
         </label>
-        <button id="cityButton" class="secondary-button" type="button">切换城市</button>
+        <button id="cityButton" class="secondary-button city-action" type="button">切换城市</button>
         <label class="search-field place-field">
           <span>地点</span>
           <input id="placeInput" type="text" placeholder="小区、商场、地铁站或地址" autocomplete="off" />
@@ -37,19 +45,16 @@
             <option value="3000">3 km</option>
           </select>
         </label>
-        <button id="placeButton" class="secondary-button" type="button">选地点</button>
-        <button id="searchButton" class="primary-button" type="button">查厕所</button>
+        <button id="placeButton" class="secondary-button place-action" type="button">搜地点</button>
+        <button id="searchButton" class="primary-button toilet-action" type="button">查厕所</button>
       </section>
 
       <nav class="map-tools" aria-label="地图工具">
         <button id="locateButton" class="tool-button" type="button" title="定位">
           <span aria-hidden="true">◎</span>
         </button>
-        <button id="fitButton" class="tool-button" type="button" title="查看全部结果">
-          <span aria-hidden="true">□</span>
-        </button>
-        <button id="configButton" class="tool-button" type="button" title="查看配置说明">
-          <span aria-hidden="true">?</span>
+        <button id="metroButton" class="tool-button" type="button" title="查看附近地铁" aria-label="查看附近地铁">
+          <span class="tool-text" aria-hidden="true">铁</span>
         </button>
         <button id="themeButton" class="tool-button" type="button" title="切换夜晚版" aria-label="切换夜晚版">
           <span id="themeIcon" aria-hidden="true">☾</span>
@@ -67,23 +72,10 @@
         <div id="resultList" class="result-list"></div>
       </aside>
 
-      <dialog id="configDialog" class="config-dialog">
-        <form method="dialog" class="config-form">
-          <div class="dialog-head">
-            <div>
-              <p class="eyebrow">后端配置</p>
-              <h2>Key 填在 .env</h2>
-            </div>
-            <button class="ghost-button" value="cancel" type="submit">关闭</button>
-          </div>
-          <p class="dialog-copy">
-            在 <code>03_SourceCode/.env</code> 中填写 <code>AMAP_JS_KEY</code>、<code>AMAP_SECURITY_JS_CODE</code>
-            和 <code>AMAP_WEB_SERVICE_KEY</code>。网页和小程序可以共用这个后端。
-          </p>
-        </form>
-      </dialog>
     </main>
 
-    <script src="./app.js"></script>
+    <script src="./web-core.js?v=20260805-tools"></script>
+    <script src="./web-map-adapters.js?v=20260805-tools"></script>
+    <script src="./app.js?v=20260805-tools"></script>
   </body>
 </html>

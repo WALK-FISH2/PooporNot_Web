@@ -42,6 +42,7 @@ AMAP_JS_KEY=production-web-js-key
 AMAP_SECURITY_JS_CODE=production-security-code
 AMAP_WEB_SERVICE_KEY=production-web-service-key
 GEOAPIFY_API_KEY=production-geoapify-key
+GEOAPIFY_MAP_TILE_KEY=production-browser-tile-key
 GEOAPIFY_BASE_URL=https://api.geoapify.com
 GEOAPIFY_TIMEOUT_MS=4000
 GEOAPIFY_SEARCH_TIMEOUT_MS=6000
@@ -121,6 +122,14 @@ curl https://pp.nuanzhualife.cn/api/health
 
 网页依赖同源 `/api/config` 和其他 `/api/*`，不需要单独修改 API 基址。必须确认 `AMAP_JS_KEY` 的高德域名白名单包含实际网页域名。
 
+网页版全球支持发布还必须：
+
+- 在生产 `.env` 配置独立 `GEOAPIFY_MAP_TILE_KEY`，不得复用 `GEOAPIFY_API_KEY`；
+- 确认 `/api/config` 只返回浏览器瓦片凭据，不返回后端 Geoapify Key；
+- 完整部署同源 `vendor/leaflet/`，并允许浏览器 HTTPS 访问 `https://maps.geoapify.com`；
+- 复核 CSP、Referer、Geoapify 瓦片额度、来源限制和 Geoapify/OSM/OpenMapTiles 署名；
+- 分别冒烟国内高德和海外 Leaflet，不能只验证 API JSON。
+
 ## 6. 微信小程序发布
 
 ### 6.1 代码配置
@@ -175,7 +184,7 @@ AMAP_ANDROID_KEY=production-android-key
 4. 调用 `/api/toilets`，确认 `pois`、`partial` 和响应时间。
 5. 调用 `/api/metro/nearby`，确认按需返回 20 km 内最近 10 站。
 6. 调用 `/api/global/cities` 和一组海外 WGS84 逆地理、厕所、地铁请求，确认 `providerUsed=geoapify` 和响应耗时。
-7. 网页地图加载、定位、厕所搜索和路线可用。
+7. 网页国内高德地图、定位、厕所搜索和路线可用；追加六城 Leaflet 瓦片、WGS84 marker、地铁按钮和外部导航检查。
 8. 小程序关闭域名跳过校验后，国内外定位、长按、厕所、地铁和 `wx.openLocation` 可用。
 9. Android 使用 HTTPS 构建，地图、定位、路线与外部导航可用。
 
@@ -205,6 +214,8 @@ AMAP_ANDROID_KEY=production-android-key
 
 检查 `/api/config`、`AMAP_JS_KEY`、`AMAP_SECURITY_JS_CODE`、域名白名单和浏览器控制台。
 
+海外空白还需检查独立瓦片 Key、`maps.geoapify.com` 请求状态、CSP/Referer、`vendor/leaflet/` 是否完整、Leaflet CSS 和瓦片署名层是否被 UI 遮挡。国内高德正常不能证明海外瓦片配置正常。
+
 ## 11. 待确认
 
 - 线上服务器操作系统、Node 版本和项目目录。
@@ -213,3 +224,4 @@ AMAP_ANDROID_KEY=production-android-key
 - HTTPS 证书申请、自动续期和负责人。
 - 当前公网 IP 是否仍开放 `5174`。
 - Android 生产构建与商店发布流程。
+- Geoapify 瓦片 Key 的来源限制、生产日额度、告警和轮换负责人。

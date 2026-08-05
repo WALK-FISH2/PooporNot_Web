@@ -37,8 +37,8 @@
 | `deployment.md` | Draft | 与代码兼容的部署方案，实际基础设施待确认 |
 | `release.md` | Draft | 建议发布流程，负责人和版本策略待确认 |
 | `roadmap.md` | Draft | 建议优先级，尚未承诺排期 |
-| `adr/` | Active/Draft | ADR-0001 已生效；索引和模板仍为 Draft |
-| `specs/` | Draft | 功能规格、计划、任务与验收；全球 POI 已实现，仍待真机验收 |
+| `adr/` | Active/Draft | ADR-0001 与 ADR-0002 已接受；索引和模板仍为 Draft |
+| `specs/` | Active/Draft | 小程序与网页版全球 POI 已实现；各自仍有真机或真实浏览器发布验收项 |
 
 ## 4. 当前事实清单
 
@@ -54,8 +54,8 @@
 - `city_index.json` 有 52 个城市索引；实际 5 个城市目录、21 个线路文件、408 条站点记录。
 - 当前站点状态：`1` 共 86 条，`2` 共 322 条，`0` 为 0 条。
 - 小程序已实现海外地点、厕所和地铁查询：Geoapify 负责海外地理编码与 POI，海外坐标保持 WGS84。
-- 首批海外城市配置位于 `data/global/cities.json`；网页和 Android 本轮不增加海外 UI。
-- 仓库已有 17 个 Node 自动化测试和小程序 TypeScript 类型检查，但没有 CI；微信真机验收仍待完成。
+- 首批海外城市配置位于 `data/global/cities.json`；网页已采用国内高德、海外 Leaflet + Geoapify Tiles 的双地图实现；Android 仍未规划海外 UI。
+- 仓库已有 21 个 Node 自动化测试和小程序 TypeScript 类型检查，但没有 CI；微信真机和网页真实设备发布验收仍待完成。
 - `.env.example` 已改为纯占位符并纳入版本控制；真实 Key 只保存在被忽略的 `.env`。
 
 ## 5. 维护规则

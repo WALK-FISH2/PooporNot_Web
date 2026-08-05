@@ -29,11 +29,11 @@
 
 ## 3. 当前平台边界
 
-- 网页使用高德 JS API，并调用 `/api/navigation` 绘制步行路线。
+- 网页国内使用高德 JS API/GCJ-02，并调用 `/api/navigation` 绘制步行路线；海外使用 Leaflet/Geoapify Tiles/WGS84，并打开外部 Google Maps 导航。
 - 小程序使用微信 `map` 组件；厕所和地铁站只保留 `wx.openLocation` 导航，不得无意恢复路线按钮或 `/api/navigation`。
 - Android 使用高德 Android SDK，当前仍保留内部步行路线和外部地图导航。
 - 三端地铁查询都以基准点 20 km 空间范围为准，不只按行政城市；小程序只在点击专用按钮后查询最近 10 站。
-- 微信小程序海外模式使用 WGS84 与 Geoapify；网页和 Android 本轮仍只支持现有国内业务。
+- 微信小程序和网页海外模式使用 WGS84 与 Geoapify；网页双地图实现遵循 `docs/specs/web-global-support/` 和 ADR-0002；Android 仍只支持国内业务。
 
 跨平台行为需要统一时，先修改规格或新增 ADR，不要把单端决策直接推广到其他端。
 
@@ -56,6 +56,7 @@
 - 浏览器 JS Key 必须限制域名；Android Key 必须限制包名和签名。
 - 小程序正式 API 使用 HTTPS 合法域名，当前配置为 `https://pp.nuanzhualife.cn`。
 - `GEOAPIFY_API_KEY` 与 `AMAP_WEB_SERVICE_KEY` 都只能保存在后端环境中；`.env.example` 只写占位符。
+- `GEOAPIFY_MAP_TILE_KEY` 是浏览器可见的独立瓦片凭据，不得复用 `GEOAPIFY_API_KEY`；真实值只写入被忽略的 `.env`，源码和文档只写变量名或占位符。
 
 ## 6. 实现约定
 
@@ -64,6 +65,7 @@
 - 外部 API 调用要考虑分页、QPS、超时、缓存、错误和部分结果；海外地点与 POI 当前直接使用 Geoapify，不再预请求公共 Overpass。
 - 后端错误必须转换为响应，不能让 Node 进程退出。
 - 选中标记、列表详情、路线或导航必须使用同一目标坐标。
+- 修改 Web 全球支持时，以 `docs/specs/web-global-support/`、ADR-0002 和当前双地图实现为边界；不得为海外功能重写国内高德流程。
 - 小程序需兼容项目实际微信编译链；避免未经验证的现代语法。
 - 修改共享 API 时同步网页、小程序、Android 类型和 `docs/api.md`。
 
