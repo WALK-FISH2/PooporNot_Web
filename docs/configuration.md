@@ -15,6 +15,8 @@ AMAP_WEB_SERVICE_KEY=
 GEOAPIFY_API_KEY=
 GEOAPIFY_BASE_URL=https://api.geoapify.com
 GEOAPIFY_TIMEOUT_MS=4000
+GEOAPIFY_SEARCH_TIMEOUT_MS=6000
+GEOAPIFY_SEARCH_CACHE_TTL_MS=300000
 PORT=5174
 AMAP_PAGE_DELAY_MS=260
 ```
@@ -27,7 +29,9 @@ AMAP_PAGE_DELAY_MS=260
 | `AMAP_KEY` | 否 | 空 | Web Service Key 的兼容别名 |
 | `GEOAPIFY_API_KEY` | 全球识别/海外 | 空 | 海外逆地理、文字地点、厕所和地铁；仅后端 |
 | `GEOAPIFY_BASE_URL` | 否 | `https://api.geoapify.com` | Geoapify API 根地址 |
-| `GEOAPIFY_TIMEOUT_MS` | 否 | `4000` | Geoapify 请求超时，毫秒 |
+| `GEOAPIFY_TIMEOUT_MS` | 否 | `4000` | Geoapify 逆地理、厕所和地铁请求超时，毫秒 |
+| `GEOAPIFY_SEARCH_TIMEOUT_MS` | 否 | `6000` | 海外文字地点搜索专用超时，毫秒 |
+| `GEOAPIFY_SEARCH_CACHE_TTL_MS` | 否 | `300000` | 相同海外城市、关键词和数量的成功搜索结果进程内缓存时间；`0` 禁用 |
 | `PORT` | 否 | `5174` | Node 监听端口 |
 | `AMAP_PAGE_DELAY_MS` | 否 | `260` | 国内厕所分页间隔，毫秒 |
 

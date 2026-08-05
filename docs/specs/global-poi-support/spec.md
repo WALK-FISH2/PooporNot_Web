@@ -324,14 +324,15 @@ Codex 在修改任何代码前，必须先阅读微信小程序现有实现，�
 
 ### 10.5 错误与性能
 
-- 后端默认 4 秒超时；
+- 逆地理、厕所和地铁默认 4 秒超时；海外文字地点搜索单独使用 6 秒超时；
+- 海外文字地点上游查询补充当前城市当地名称，降低中文等跨语言名称的消歧耗时；
 - 处理 HTTP 429、网络错误、HTTP 5xx 和非法响应；
 - 不在 Geoapify 之前串行调用公共 Overpass；
 - 失败时返回可理解错误并保留客户端已有有效地图状态。
 
 ### 10.6 第一版性能保护
 
-第一版不做数据库、Redis 或持久化缓存，但必须包含：
+第一版不做数据库、Redis 或持久化缓存；海外文字地点成功结果可使用最多 5 分钟、100 组的进程内短缓存。其余性能保护必须包含：
 
 - 同一时刻只允许一个厕所查询；
 - 新查询可取消或淘汰旧查询结果；
@@ -471,6 +472,8 @@ interface NormalizedPlace {
 GEOAPIFY_API_KEY=
 GEOAPIFY_BASE_URL=https://api.geoapify.com
 GEOAPIFY_TIMEOUT_MS=4000
+GEOAPIFY_SEARCH_TIMEOUT_MS=6000
+GEOAPIFY_SEARCH_CACHE_TTL_MS=300000
 ```
 
 要求：

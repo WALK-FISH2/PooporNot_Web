@@ -44,6 +44,8 @@ AMAP_WEB_SERVICE_KEY=production-web-service-key
 GEOAPIFY_API_KEY=production-geoapify-key
 GEOAPIFY_BASE_URL=https://api.geoapify.com
 GEOAPIFY_TIMEOUT_MS=4000
+GEOAPIFY_SEARCH_TIMEOUT_MS=6000
+GEOAPIFY_SEARCH_CACHE_TTL_MS=300000
 PORT=5174
 AMAP_PAGE_DELAY_MS=260
 ```
@@ -197,7 +199,7 @@ AMAP_ANDROID_KEY=production-android-key
 
 ### 海外结果响应慢
 
-海外 POI 直接使用 Geoapify，不再串行等待 Overpass。检查 `providerUsed`、`durationMs`、Geoapify 配额和服务端诊断；默认 `GEOAPIFY_TIMEOUT_MS=4000`，不要通过无限延长超时阻塞小程序。
+海外 POI 直接使用 Geoapify，不再串行等待 Overpass。检查 `providerUsed`、`durationMs`、`cacheHit`、Geoapify 配额和服务端诊断；逆地理、厕所和地铁默认 `GEOAPIFY_TIMEOUT_MS=4000`，海外文字地点搜索单独使用 `GEOAPIFY_SEARCH_TIMEOUT_MS=6000`。不要通过无限延长超时阻塞小程序。
 
 ### 网页底图加载失败
 

@@ -30,6 +30,25 @@ test("Geoapify search applies hard filter and keeps key in backend request only"
   assert.equal(url.searchParams.get("apiKey"), "test-key");
 });
 
+test("Geoapify search supports a request-specific timeout", async () => {
+  const client = createGeoapifyClient({
+    apiKey: "test-key",
+    timeoutMs: 1000,
+    fetchImpl: async (_url, options) =>
+      new Promise((_resolve, reject) => {
+        options.signal.addEventListener("abort", () => {
+          const error = new Error("aborted");
+          error.name = "AbortError";
+          reject(error);
+        });
+      }),
+  });
+  await assert.rejects(
+    () => client.search({ text: "slow", timeoutMs: 5 }),
+    (error) => error.code === "PROVIDER_TIMEOUT" && error.statusCode === 504,
+  );
+});
+
 test("Geoapify Places applies subway category, radius and result limit", async () => {
   let requestedUrl = "";
   const client = createGeoapifyClient({

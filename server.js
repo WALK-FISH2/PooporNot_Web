@@ -19,6 +19,8 @@ const AMAP_PAGE_DELAY_MS = Number(process.env.AMAP_PAGE_DELAY_MS || 260);
 const GEOAPIFY_API_KEY = process.env.GEOAPIFY_API_KEY || "";
 const GEOAPIFY_BASE_URL = process.env.GEOAPIFY_BASE_URL || "https://api.geoapify.com";
 const GEOAPIFY_TIMEOUT_MS = Number(process.env.GEOAPIFY_TIMEOUT_MS || 4000);
+const GEOAPIFY_SEARCH_TIMEOUT_MS = Number(process.env.GEOAPIFY_SEARCH_TIMEOUT_MS || 6000);
+const GEOAPIFY_SEARCH_CACHE_TTL_MS = Number(process.env.GEOAPIFY_SEARCH_CACHE_TTL_MS || 300000);
 const metroCityStationCache = new Map();
 let metroCityIndexCache = null;
 let localMetroStatusCache = null;
@@ -26,6 +28,8 @@ const globalPoiService = createGlobalPoiService({
   geoapifyApiKey: GEOAPIFY_API_KEY,
   geoapifyBaseUrl: GEOAPIFY_BASE_URL,
   providerTimeoutMs: GEOAPIFY_TIMEOUT_MS,
+  placeSearchTimeoutMs: GEOAPIFY_SEARCH_TIMEOUT_MS,
+  placeSearchCacheTtlMs: GEOAPIFY_SEARCH_CACHE_TTL_MS,
 });
 
 const PROVINCE_SLUG_ALIASES = {
@@ -51,8 +55,10 @@ const mimeTypes = {
 };
 
 const server = http.createServer(async (req, res) => {
+  let requestPath = "";
   try {
     const reqUrl = new URL(req.url, `http://${req.headers.host}`);
+    requestPath = reqUrl.pathname;
     setCors(res);
 
     if (req.method === "OPTIONS") {
@@ -99,7 +105,7 @@ const server = http.createServer(async (req, res) => {
     return serveStatic(reqUrl.pathname, res);
   } catch (error) {
     console.error("Request failed", safeProviderError(error, [AMAP_WEB_SERVICE_KEY, GEOAPIFY_API_KEY]));
-    return sendJson(res, { error: getClientErrorMessage(error) }, getErrorStatus(error));
+    return sendJson(res, { error: getClientErrorMessage(error, requestPath) }, getErrorStatus(error));
   }
 });
 
@@ -883,6 +889,7 @@ function logQueryDiagnostic(requestType, regionMode, result, request = {}) {
     truncated: Boolean(result.truncated),
     coordinateSystem: result.coordinateSystem,
     durationMs: Number(result.durationMs || 0),
+    cacheHit: Boolean(result.cacheHit),
     request: {
       ...request,
       lng: request.lng === undefined ? undefined : Number(Number(request.lng).toFixed(5)),
@@ -902,12 +909,15 @@ function getErrorStatus(error) {
   return 500;
 }
 
-function getClientErrorMessage(error) {
+function getClientErrorMessage(error, requestPath = "") {
   if (error?.infocode === "20803" || error?.message === "OVER_DIRECTION_RANGE") {
     return "步行路线距离过远，无法规划。请先选定更近的基准点，或改用系统地图导航。";
   }
   if (error?.code === "ALL_PROVIDERS_FAILED" || error?.code === "PROVIDER_NOT_CONFIGURED") {
     return error.message;
+  }
+  if (error?.code === "PROVIDER_TIMEOUT") {
+    return requestPath === "/api/places" ? "地点搜索响应较慢，请重试" : "第三方地点服务响应较慢，请重试";
   }
   if (error?.provider && error?.code) return "第三方地点服务暂时不可用，请稍后重试";
   return error?.message || "服务器内部错误";
