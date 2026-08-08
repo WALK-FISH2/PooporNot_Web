@@ -168,7 +168,7 @@ Component({
       return {
         title: "拉了么｜快速查找附近厕所",
         query: "",
-        imageUrl: "/assets/share-cover.png",
+        imageUrl: "/assets/share-pyq.jpg",
       };
     },
 
