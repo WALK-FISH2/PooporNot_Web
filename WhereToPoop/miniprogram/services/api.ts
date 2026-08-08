@@ -151,12 +151,91 @@ interface RawMetroResult extends RawQueryMetadata {
   }>;
 }
 
+export type LocationFailureCode =
+  | "LOCATION_PERMISSION_DENIED"
+  | "LOCATION_SERVICE_DISABLED"
+  | "LOCATION_TEMPORARY_FAILURE";
+
+export interface LocationRequestError extends Error {
+  code: LocationFailureCode;
+  errMsg: string;
+  errno?: number;
+  retryable: boolean;
+}
+
+interface ClientRequestError extends Error {
+  errMsg?: string;
+  statusCode?: number;
+  retryable?: boolean;
+}
+
+const getLocationFailureCodeFromMessage = (errMsg: string): LocationFailureCode => {
+  const normalized = errMsg.toLowerCase();
+  if (
+    /system permission denied|location.*(?:off|disabled)|gps.*(?:off|disabled)|nocell&wifi/.test(normalized)
+  ) {
+    return "LOCATION_SERVICE_DISABLED";
+  }
+  if (
+    /auth deny|authorize no response|permission denied|privacy permission|scope\.userlocation|(?:auth|permission|privacy|access).*(?:deny|denied|not authorized)|用户拒绝|未授权/.test(normalized)
+  ) {
+    return "LOCATION_PERMISSION_DENIED";
+  }
+  return "LOCATION_TEMPORARY_FAILURE";
+};
+
+export const getLocationFailureCode = (error: unknown): LocationFailureCode | "" => {
+  const code = String((error as { code?: string }).code || "");
+  if (
+    code === "LOCATION_PERMISSION_DENIED" ||
+    code === "LOCATION_SERVICE_DISABLED" ||
+    code === "LOCATION_TEMPORARY_FAILURE"
+  ) {
+    return code;
+  }
+  return "";
+};
+
+export const isRetryableLocationError = (error: unknown) =>
+  getLocationFailureCode(error) === "LOCATION_TEMPORARY_FAILURE";
+
+export const isRetryableRequestError = (error: unknown) => {
+  const requestError = error as ClientRequestError;
+  if (typeof requestError.retryable === "boolean") return requestError.retryable;
+  return /网络请求失败|request:fail|请求超时|timeout|暂时不可用|请求失败 (?:429|500|502|503|504)/i.test(
+    error instanceof Error ? error.message : String(error || ""),
+  );
+};
+
 export const getCurrentLocation = (type: "gcj02" | "wgs84" = "gcj02") =>
   new Promise<LngLat>((resolve, reject) => {
     wx.getLocation({
       type,
       success: (res) => resolve({ longitude: res.longitude, latitude: res.latitude }),
-      fail: () => reject(new Error("定位失败，请授权位置信息，或手动选择城市和地点")),
+      fail: (failure) => {
+        const rawFailure = failure as WechatMiniprogram.GeneralCallbackResult & { errno?: number };
+        const errMsg = String(rawFailure.errMsg || "getLocation:fail");
+        const code = getLocationFailureCodeFromMessage(errMsg);
+        const message =
+          code === "LOCATION_PERMISSION_DENIED"
+            ? "未获得位置权限，请在设置中允许后重试"
+            : code === "LOCATION_SERVICE_DISABLED"
+              ? "系统定位服务不可用，请开启手机定位后重试"
+              : "定位服务暂时不可用，请稍后重试";
+        const locationError = new Error(message) as LocationRequestError;
+        locationError.name = "LocationRequestError";
+        locationError.code = code;
+        locationError.errMsg = errMsg;
+        locationError.errno = rawFailure.errno;
+        locationError.retryable = code === "LOCATION_TEMPORARY_FAILURE";
+        console.warn("wx.getLocation failed", {
+          stage: `getLocation-${type}`,
+          code,
+          errMsg,
+          errno: rawFailure.errno,
+        });
+        reject(locationError);
+      },
     });
   });
 
@@ -341,11 +420,22 @@ const apiRequest = <T>(path: string, data: Record<string, string>) =>
       success: (res) => {
         if (res.statusCode < 200 || res.statusCode >= 300) {
           const body = res.data as { error?: string };
-          reject(new Error((body && body.error) || `请求失败 ${res.statusCode}`));
+          const requestError = new Error((body && body.error) || `请求失败 ${res.statusCode}`) as ClientRequestError;
+          requestError.name = "ClientRequestError";
+          requestError.statusCode = res.statusCode;
+          requestError.retryable = [429, 500, 502, 503, 504].indexOf(res.statusCode) >= 0;
+          reject(requestError);
           return;
         }
         resolve(res.data as T);
       },
-      fail: (error) => reject(new Error(error.errMsg || "网络请求失败")),
+      fail: (failure) => {
+        const errMsg = String(failure.errMsg || "网络请求失败");
+        const requestError = new Error(errMsg) as ClientRequestError;
+        requestError.name = "ClientRequestError";
+        requestError.errMsg = errMsg;
+        requestError.retryable = true;
+        reject(requestError);
+      },
     });
   });

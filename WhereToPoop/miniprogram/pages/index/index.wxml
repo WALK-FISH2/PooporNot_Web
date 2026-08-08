@@ -123,6 +123,15 @@
         <text class="city-sheet-title">选择城市</text>
         <text class="city-close" bindtap="onCityPanelClose">×</text>
       </view>
+      <view wx:if="{{locationRetryVisible}}" class="location-retry">
+        <view class="location-retry-copy">
+          <text class="location-retry-title">定位未完成</text>
+          <text class="location-retry-text">{{locationFailureText}}</text>
+        </view>
+        <button class="location-retry-button" bindtap="onLocationRetryTap" loading="{{locationLoading}}" disabled="{{locationLoading}}">
+          {{locationPermissionDenied ? '去设置' : (locationLoading ? '定位中' : '重新定位')}}
+        </button>
+      </view>
       <view class="region-tabs">
         <view class="region-tab {{cityPanelRegion === 'mainland' ? 'active' : ''}}" data-region="mainland" bindtap="onRegionModeTap">中国大陆</view>
         <view class="region-tab {{cityPanelRegion === 'overseas' ? 'active' : ''}}" data-region="overseas" bindtap="onRegionModeTap">其他地区</view>

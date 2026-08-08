@@ -1,13 +1,17 @@
 import {
   CoordinateSystem,
   getCurrentLocation,
+  getLocationFailureCode,
   getOverseasCities,
+  isRetryableLocationError,
+  isRetryableRequestError,
   LngLat,
   loadMetroForLocation,
   MetroStation,
   OverseasCity,
   PlacePoi,
   RegionMode,
+  ReverseLocationResult,
   reverseGlobalLocation,
   reverseLocation,
   SearchCenter,
@@ -87,6 +91,51 @@ const QUERY_CENTER_MARKER_ID = 40000;
 const TEMP_SELECTION_MARKER_ID = 50000;
 const METRO_RADIUS = 20000;
 const METRO_LIMIT = 10;
+const LOCATION_RETRY_DELAY_MS = 450;
+const REVERSE_RETRY_DELAY_MS = 350;
+
+const wait = (milliseconds: number) =>
+  new Promise<void>((resolve) => {
+    setTimeout(resolve, milliseconds);
+  });
+
+const getErrorMessage = (error: unknown) =>
+  error instanceof Error ? error.message : String(error || "未知错误");
+
+const withSingleRetry = async <T>(
+  operation: () => Promise<T>,
+  shouldRetry: (error: unknown) => boolean,
+  stage: string,
+  delayMilliseconds: number,
+): Promise<T> => {
+  try {
+    return await operation();
+  } catch (error) {
+    if (!shouldRetry(error)) throw error;
+    console.warn(`${stage} failed, retrying once`, { stage, message: getErrorMessage(error) });
+    await wait(delayMilliseconds);
+    return operation();
+  }
+};
+
+const mainlandLocationFallback = (): ReverseLocationResult => ({
+  province: "",
+  city: "",
+  district: "",
+  country: "中国",
+  countryCode: "cn",
+  cityId: "",
+  regionMode: "mainland",
+  coordinateSystem: "GCJ02",
+  providerUsed: "amap",
+  retrievedAt: new Date().toISOString(),
+});
+
+const loadOverseasCitiesSafely = () =>
+  getOverseasCities().catch((error) => {
+    console.warn("overseas city config unavailable", { message: getErrorMessage(error) });
+    return [] as OverseasCity[];
+  });
 
 Component({
   data: {
@@ -126,6 +175,10 @@ Component({
     placeLoading: false,
     toiletLoading: false,
     metroLoading: false,
+    locationLoading: false,
+    locationRetryVisible: false,
+    locationPermissionDenied: false,
+    locationFailureText: "",
     placeRequestId: 0,
     toiletRequestId: 0,
     metroRequestId: 0,
@@ -174,51 +227,109 @@ Component({
 
     async bootstrap() {
       this.setData({ radiusText: this.formatDistance(this.data.radius) });
-      const citiesPromise = getOverseasCities().catch((error) => {
-        console.warn("overseas city config unavailable", error);
-        return [] as OverseasCity[];
-      });
+      await this.locateAndApply(loadOverseasCitiesSafely());
+    },
 
+    async locateAndApply(citiesPromise: Promise<OverseasCity[]>) {
+      if (this.data.locationLoading) return;
+      this.setData({
+        locationLoading: true,
+        locationRetryVisible: false,
+        statusText: "定位中",
+      });
       try {
         const located = await this.resolveCurrentLocation();
-        const overseasCities = await citiesPromise;
+        const countryCode = String(located.resolved.countryCode || "").toLowerCase();
+        const overseasCities = countryCode === "cn" ? this.data.overseasCities : await citiesPromise;
         await this.applyLocatedPosition(located.location, located.resolved, overseasCities);
+        if (countryCode === "cn") {
+          citiesPromise.then((cities) => this.setData({ overseasCities: cities }));
+        }
       } catch (error) {
-        const overseasCities = await citiesPromise;
-        console.warn("location unavailable", error);
-        this.setData({
-          overseasCities,
-          cityPanelVisible: true,
-          statusText: "请选择地点",
-          panelMode: "empty",
-          resultTitle: "未能获取当前位置",
-          resultCount: "0",
-          queryCenter: null,
-        });
-        wx.showToast({
-          title: "未能获取当前位置，请选择城市、搜索地点或在地图上长按选点",
-          icon: "none",
-          duration: 3200,
-        });
+        this.handleLocationFailure(error);
+        citiesPromise.then((cities) => this.setData({ overseasCities: cities }));
+      } finally {
+        this.setData({ locationLoading: false });
       }
     },
 
     async resolveCurrentLocation() {
-      const gcjLocation = await getCurrentLocation("gcj02");
+      const gcjLocation = await withSingleRetry(
+        () => getCurrentLocation("gcj02"),
+        isRetryableLocationError,
+        "getLocation-gcj02",
+        LOCATION_RETRY_DELAY_MS,
+      );
       if (this.isLikelyMainlandCoordinate(gcjLocation)) {
         try {
-          const domesticResolved = await reverseLocation(gcjLocation);
-          if (String(domesticResolved.countryCode || "").toLowerCase() === "cn") {
+          const domesticResolved = await withSingleRetry(
+            () => reverseLocation(gcjLocation),
+            isRetryableRequestError,
+            "amap-reverse",
+            REVERSE_RETRY_DELAY_MS,
+          );
+          const countryCode = String(domesticResolved.countryCode || "").toLowerCase();
+          if (countryCode === "cn") {
             return { location: gcjLocation, resolved: domesticResolved };
           }
+          if (!countryCode) {
+            console.warn("domestic reverse returned no country, using mainland coordinate fallback");
+            return { location: gcjLocation, resolved: mainlandLocationFallback() };
+          }
         } catch (error) {
-          console.warn("domestic reverse location unavailable", error);
+          console.warn("domestic reverse location unavailable, using mainland coordinate fallback", {
+            stage: "amap-reverse",
+            message: getErrorMessage(error),
+          });
+          return { location: gcjLocation, resolved: mainlandLocationFallback() };
         }
       }
 
-      const wgsLocation = await getCurrentLocation("wgs84");
-      const globalResolved = await reverseGlobalLocation(wgsLocation);
+      const wgsLocation = await withSingleRetry(
+        () => getCurrentLocation("wgs84"),
+        isRetryableLocationError,
+        "getLocation-wgs84",
+        LOCATION_RETRY_DELAY_MS,
+      );
+      const globalResolved = await withSingleRetry(
+        () => reverseGlobalLocation(wgsLocation),
+        isRetryableRequestError,
+        "geoapify-reverse",
+        REVERSE_RETRY_DELAY_MS,
+      );
       return { location: wgsLocation, resolved: globalResolved };
+    },
+
+    handleLocationFailure(error: unknown) {
+      const failureCode = getLocationFailureCode(error);
+      const permissionDenied = failureCode === "LOCATION_PERMISSION_DENIED";
+      const serviceDisabled = failureCode === "LOCATION_SERVICE_DISABLED";
+      const locationFailureText = permissionDenied
+        ? "位置权限未开启。允许定位后即可自动查找附近厕所。"
+        : serviceDisabled
+          ? "手机定位服务当前不可用。开启系统定位后可以重新尝试。"
+          : "暂时未能识别当前位置，可以重新定位或继续手动选择。";
+      console.warn("location unavailable", {
+        stage: failureCode ? "getLocation" : "reverse-location",
+        code: failureCode || "LOCATION_RESOLUTION_FAILED",
+        message: getErrorMessage(error),
+      });
+      this.setData({
+        cityPanelVisible: true,
+        locationRetryVisible: true,
+        locationPermissionDenied: permissionDenied,
+        locationFailureText,
+        statusText: "请选择地点",
+        panelMode: "empty",
+        resultTitle: "未能获取当前位置",
+        resultCount: "0",
+        queryCenter: null,
+      });
+      wx.showToast({
+        title: permissionDenied ? "请允许位置权限后重试" : "暂时未能定位，可以重新尝试",
+        icon: "none",
+        duration: 2800,
+      });
     },
 
     isLikelyMainlandCoordinate(location: LngLat) {
@@ -235,7 +346,8 @@ Component({
       const mainland = countryCode === "cn";
       const coordinateSystem: CoordinateSystem = mainland ? "GCJ02" : "WGS84";
       const regionMode: RegionMode = mainland ? "mainland" : "overseas";
-      const cityName = this.normalizeCityName(resolved.city || resolved.province || resolved.country || "当前位置");
+      const locality = String(resolved.city || resolved.province || (countryCode === "cn" ? "" : resolved.country) || "");
+      const cityName = locality ? this.normalizeCityName(locality) : "";
       const matchedCity = mainland ? null : this.findClosestOverseasCity(location, overseasCities);
       const queryCenter: SearchCenter = {
         ...location,
@@ -253,6 +365,10 @@ Component({
         temporarySelection: null,
         regionMode,
         cityPanelRegion: regionMode,
+        cityPanelVisible: false,
+        locationRetryVisible: false,
+        locationPermissionDenied: false,
+        locationFailureText: "",
         activeOverseasCityId: matchedCity ? matchedCity.id : "",
         cityKeyword: matchedCity ? matchedCity.nameZh : cityName,
         queryCenterName: "当前位置",
@@ -495,14 +611,28 @@ Component({
     },
 
     async onLocateTap() {
-      try {
-        this.setData({ statusText: "定位中" });
-        const located = await this.resolveCurrentLocation();
-        const cities = this.data.overseasCities.length ? this.data.overseasCities : await getOverseasCities();
-        await this.applyLocatedPosition(located.location, located.resolved, cities);
-      } catch (error) {
-        this.showError(error);
+      const citiesPromise = this.data.overseasCities.length
+        ? Promise.resolve(this.data.overseasCities)
+        : loadOverseasCitiesSafely();
+      await this.locateAndApply(citiesPromise);
+    },
+
+    onLocationRetryTap() {
+      if (this.data.locationLoading) return;
+      if (!this.data.locationPermissionDenied) {
+        this.onLocateTap();
+        return;
       }
+      wx.openSetting({
+        success: (result) => {
+          if (result.authSetting["scope.userLocation"]) {
+            this.onLocateTap();
+            return;
+          }
+          this.showError("请在设置中允许使用位置信息");
+        },
+        fail: () => this.showError("暂时无法打开权限设置，请稍后重试"),
+      });
     },
 
     onRadiusChange(event: any) {

@@ -548,6 +548,73 @@ picker {
   color: #eef5ee;
 }
 
+.location-retry {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 176rpx;
+  gap: 18rpx;
+  align-items: center;
+  margin-bottom: 18rpx;
+  padding: 18rpx;
+  border-left: 6rpx solid #2374ab;
+  border-radius: 10rpx;
+  background: #eef6fb;
+}
+
+.location-retry-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+  min-width: 0;
+}
+
+.location-retry-title,
+.location-retry-text {
+  display: block;
+  line-height: 1.35;
+}
+
+.location-retry-title {
+  color: #17211b;
+  font-size: 26rpx;
+  font-weight: 800;
+}
+
+.location-retry-text {
+  color: #68736c;
+  font-size: 21rpx;
+}
+
+.location-retry-button {
+  width: 176rpx;
+  height: 64rpx;
+  margin: 0;
+  padding: 0 12rpx;
+  border: 0;
+  border-radius: 10rpx;
+  color: #fff;
+  background: #2374ab;
+  font-size: 23rpx;
+  font-weight: 800;
+  line-height: 64rpx;
+}
+
+.location-retry-button::after {
+  border: 0;
+}
+
+.dark .location-retry {
+  border-left-color: #5ba6d6;
+  background: #192832;
+}
+
+.dark .location-retry-title {
+  color: #eef5ee;
+}
+
+.dark .location-retry-text {
+  color: #a7b2ac;
+}
+
 .city-close {
   width: 64rpx;
   height: 64rpx;
