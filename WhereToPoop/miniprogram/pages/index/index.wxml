@@ -6,7 +6,6 @@
       latitude="{{latitude}}"
       longitude="{{longitude}}"
       scale="{{scale}}"
-      show-location
       markers="{{markers}}"
       bindmarkertap="onMarkerTap"
       bindcallouttap="onMarkerCalloutTap"
